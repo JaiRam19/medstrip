@@ -1,0 +1,11 @@
+As an app
+
+MedStrip is a digital medicine cabinet. You photograph a medicine strip, and the app reads the name, strength and expiry date. It then looks up official label warnings and checks the new medicine against the ones you already have. You can also ask it questions like “Can I take ibuprofen with my other medicines?”
+
+Its practical uses are:
+
+Seeing what you have at home and what expires soon.
+Catching risky combinations, such as warfarin with aspirin, before you take them.
+Getting a “ask a pharmacist” warning when it can’t check something. It never shows an unchecked medicine as safe.
+
+It is a learning project, so it is not medical advice and shouldn’t replace a pharmacist.

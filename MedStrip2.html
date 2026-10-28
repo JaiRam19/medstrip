@@ -1,0 +1,617 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>MedStrip</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600&family=JetBrains+Mono:wght@400;500&family=Source+Sans+3:wght@400;500;600&display=swap">
+<style>
+  /* Layout: single reading column, anchor nav, one section per design decision.
+     Palette: cool blue-grey neutrals, one indigo accent; red/amber/green only mean risk or status. */
+  :root {
+    --bg: #f2f4f9;
+    --surface: #ffffff;
+    --fg: #151a2b;
+    --muted: #566078;
+    --line: #d6dbe8;
+    --accent: #2f4bd0;
+    --accent-soft: #e1e7fb;
+    --crit: #b42318;
+    --crit-soft: #fbe6e3;
+    --warn: #9a5b06;
+    --ok: #17773a;
+    --code-bg: #e8ebf4;
+    --font-display: "Bricolage Grotesque", "Arial Narrow", system-ui, sans-serif;
+    --font-body: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1220;
+      --surface: #171b2e;
+      --fg: #e6e9f5;
+      --muted: #98a1bd;
+      --line: #2a3050;
+      --accent: #8ea2ff;
+      --accent-soft: #1f2750;
+      --crit: #ff8f85;
+      --crit-soft: #3a1b19;
+      --warn: #f0b45a;
+      --ok: #6ccf8a;
+      --code-bg: #0b0e1a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1220;
+    --surface: #171b2e;
+    --fg: #e6e9f5;
+    --muted: #98a1bd;
+    --line: #2a3050;
+    --accent: #8ea2ff;
+    --accent-soft: #1f2750;
+    --crit: #ff8f85;
+    --crit-soft: #3a1b19;
+    --warn: #f0b45a;
+    --ok: #6ccf8a;
+    --code-bg: #0b0e1a;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    padding-block: 32px 64px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .wrap { max-width: 62rem; margin: 0 auto; display: flex; flex-direction: column; gap: 40px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 600; text-wrap: balance; margin: 0; line-height: 1.15; }
+  h1 { font-size: clamp(2.2rem, 6vw, 3.4rem); letter-spacing: -0.015em; }
+  h2 { font-size: 1.6rem; }
+  h3 { font-size: 1.1rem; }
+  p { margin: 0; max-width: 65ch; }
+  .eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+  .lede { font-size: 1.15rem; max-width: 60ch; }
+  .muted { color: var(--muted); }
+
+  header { display: flex; flex-direction: column; gap: 14px; }
+  .facts { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 6px 0 0; padding: 0; list-style: none; font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+  .facts b { color: var(--fg); font-weight: 500; }
+
+  nav { display: flex; flex-wrap: wrap; gap: 6px 4px; border-block: 1px solid var(--line); padding-block: 10px; }
+  nav a { color: var(--muted); text-decoration: none; font-size: 14px; padding: 4px 10px; border-radius: 4px; }
+  nav a:hover { color: var(--accent); background: var(--accent-soft); }
+
+  section { display: flex; flex-direction: column; gap: 16px; scroll-margin-top: 16px; }
+  section > h2 { padding-top: 24px; border-top: 1px solid var(--line); }
+
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .panel ul { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 4px; }
+  .panel dl { margin: 0; display: grid; grid-template-columns: 5.5rem 1fr; gap: 6px 10px; font-size: 15px; }
+  .panel dt { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding-top: 3px; }
+  .panel dd { margin: 0; min-width: 0; }
+  .panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+
+  code, pre { font-family: var(--font-mono); font-size: 13px; }
+  code { background: var(--code-bg); padding: 1px 5px; border-radius: 3px; overflow-wrap: anywhere; }
+  pre { background: var(--code-bg); padding: 14px 16px; border-radius: 6px; margin: 0; overflow-x: auto; line-height: 1.5; }
+  pre code { background: none; padding: 0; overflow-wrap: normal; }
+
+  .tablewrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+  table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 15px; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+  th { font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); background: var(--code-bg); white-space: nowrap; }
+  tr:last-child td { border-bottom: 0; }
+  .pill { display: inline-block; font-family: var(--font-mono); font-size: 11.5px; padding: 1px 8px; border-radius: 99px; border: 1px solid currentColor; white-space: nowrap; }
+  .pill.crit { color: var(--crit); }
+  .pill.warn { color: var(--warn); }
+  .pill.ok { color: var(--ok); }
+  .pill.acc { color: var(--accent); }
+  .pill.mute { color: var(--muted); }
+
+  .callout { background: var(--accent-soft); border-radius: 6px; padding: 14px 16px; max-width: 65ch; }
+  .callout.crit { background: var(--crit-soft); }
+
+  .lifecycle { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12.5px; }
+  .lifecycle .st { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 4px 10px; }
+  .lifecycle .st.end { border-color: var(--ok); color: var(--ok); }
+  .lifecycle .st.bad { border-color: var(--crit); color: var(--crit); }
+  .lifecycle .arrow { color: var(--muted); }
+
+  ol.steps { margin: 0; padding: 0; list-style: none; counter-reset: s; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+  ol.steps li { counter-increment: s; display: grid; grid-template-columns: 2.2rem 1fr; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); min-width: 0; }
+  ol.steps li:last-child { border-bottom: 0; }
+  ol.steps li::before { content: counter(s); font-family: var(--font-mono); color: var(--accent); font-weight: 500; }
+  ol.steps li.day { background: var(--code-bg); font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); display: block; counter-increment: none; padding-block: 8px; }
+  ol.steps li.day::before { content: none; }
+
+  .checks { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+  .checks li { border-bottom: 1px solid var(--line); }
+  .checks li:last-child { border-bottom: 0; }
+  .checks label { display: grid; grid-template-columns: 1.4rem 1fr; gap: 10px; padding: 12px 16px; cursor: pointer; align-items: start; }
+  .checks input { margin: 5px 0 0; width: 16px; height: 16px; accent-color: var(--accent); }
+  .progress { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+
+  pre.mermaid { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px; overflow-x: auto; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    nav a { transition: background 0.15s, color 0.15s; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Requirements · Kafka, Redis, S3, Spring AI, LangChain4j</span>
+    <h1>MedStrip</h1>
+    <p class="lede">Photograph a medicine strip. A small team of agents reads the name and expiry date, looks up official warnings, checks the new medicine against your cabinet, and lets you ask questions about it in chat.</p>
+    <ul class="facts">
+      <li><b>4</b> agents in version 1</li>
+      <li><b>3</b> more later</li>
+      <li><b>2</b> apps</li>
+      <li><b>6</b> failure drills</li>
+      <li><b>2 to 3</b> days</li>
+    </ul>
+  </header>
+
+  <nav aria-label="Sections">
+    <a href="#scope">Scope</a>
+    <a href="#flow">Flow</a>
+    <a href="#tech">Tech roles</a>
+    <a href="#agents">Agents</a>
+    <a href="#topics">Topics</a>
+    <a href="#contracts">Messages</a>
+    <a href="#storage">Redis and S3</a>
+    <a href="#api">API</a>
+    <a href="#risk">Risk levels</a>
+    <a href="#failures">Failure drills</a>
+    <a href="#build">Build order</a>
+    <a href="#done">Done when</a>
+  </nav>
+
+  <section id="scope">
+    <h2>Scope</h2>
+    <div class="grid2">
+      <div class="panel">
+        <span class="pill ok" style="align-self:flex-start">Version 1</span>
+        <ul>
+          <li>Upload a strip photo and get a job id back right away.</li>
+          <li>Vision Reader, Drug Facts, Interaction Checker, Chat Concierge.</li>
+          <li>Cabinet of medicines per user, stored in Redis.</li>
+          <li>Retry, dead letter topic, and a "retake photo" outcome.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <span class="pill mute" style="align-self:flex-start">Later</span>
+        <ul>
+          <li>Safety Reviewer (next, most interesting).</li>
+          <li>Schedule Planner and Expiry Watcher.</li>
+          <li>Login, real users, a front end beyond a simple page.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout crit"><b>Safety rules.</b> This is a learning project, not medical advice. Use your own photos or sample strips, never someone else's. No agent gives dosage advice or a diagnosis. Show "Not medical advice. Ask a pharmacist." in every chat answer and on every HIGH or UNKNOWN result.</div>
+  </section>
+
+  <section id="flow">
+    <h2>Flow</h2>
+    <pre class="mermaid">
+flowchart LR
+  U["User"] -->|"POST /photos"| API["medstrip-api"]
+  API -->|"save image"| S3[("S3")]
+  API -->|"medicine-photo-uploaded"| VR["Vision Reader"]
+  VR -->|"medicine-extracted"| DF["Drug Facts"]
+  DF <-->|"lookup and cache"| FDA["openFDA + Redis cache"]
+  DF -->|"medicine-enriched"| IC["Interaction Checker"]
+  IC -->|"interaction-checked"| CW["Cabinet Writer"]
+  CW --> RC[("Redis cabinet")]
+  U -->|"POST /chat"| CC["Chat Concierge"]
+  CC --> RC
+  VR -.->|"unreadable file"| DLT["medstrip.DLT"]
+  DF -.->|"retries used up"| DLT
+  IC -.->|"retries used up"| DLT
+    </pre>
+    <p class="muted">Solid lines are version 1. Dashed lines are failure paths. When you add the Safety Reviewer, it sits between Interaction Checker and Cabinet Writer.</p>
+    <h3>Job status the user sees</h3>
+    <div class="lifecycle" aria-label="Job status lifecycle">
+      <span class="st">UPLOADED</span><span class="arrow">→</span>
+      <span class="st">READING</span><span class="arrow">→</span>
+      <span class="st">LOOKING_UP</span><span class="arrow">→</span>
+      <span class="st">CHECKING</span><span class="arrow">→</span>
+      <span class="st end">DONE</span>
+      <span class="arrow">or</span>
+      <span class="st bad">NEEDS_RETAKE</span>
+      <span class="st bad">FAILED</span>
+    </div>
+  </section>
+
+  <section id="tech">
+    <h2>What each technology does</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Technology</th><th>Job in this project</th></tr></thead>
+        <tbody>
+          <tr><td><b>S3</b> (LocalStack locally)</td><td>Stores uploaded photos. Key is <code>{userId}/{jobId}.jpg</code>. Delete after 7 days.</td></tr>
+          <tr><td><b>Kafka</b></td><td>Moves a job from one agent to the next. The upload returns at once and the agents work in the background.</td></tr>
+          <tr><td><b>Redis</b></td><td>Cabinet, job status, openFDA cache, duplicate-photo check, upload rate limit, chat memory.</td></tr>
+          <tr><td><b>Spring AI</b></td><td>The pipeline agents: vision reading, summarizing label text, risk rating. Structured output into Java records.</td></tr>
+          <tr><td><b>LangChain4j</b></td><td>The Chat Concierge: an AI service with tools and Redis-backed chat memory.</td></tr>
+          <tr><td><b>openFDA</b></td><td>Free drug label API. Fields used: <code>warnings</code>, <code>drug_interactions</code>. Example: <code>https://api.fda.gov/drug/label.json?search=openfda.brand_name:"ibuprofen"&amp;limit=1</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted">Two Spring Boot apps: <b>medstrip-api</b> (upload, status, cabinet, chat) and <b>medstrip-agents</b> (all Kafka consumers). Run Kafka, Kafka UI, Redis and LocalStack with Docker Compose. Use any vision-capable model, or a local one through Ollama.</p>
+  </section>
+
+  <section id="agents">
+    <h2>Agents</h2>
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-head"><h3>Vision Reader</h3><span class="pill ok">v1</span></div>
+        <dl>
+          <dt>Listens</dt><dd><code>medicine-photo-uploaded</code></dd>
+          <dt>Does</dt><dd>Loads the image from S3 and asks the model for name, strength, expiry and a confidence score.</dd>
+          <dt>Produces</dt><dd><code>medicine-extracted</code></dd>
+          <dt>Edge cases</dt><dd>Confidence under 0.7 sets <code>NEEDS_RETAKE</code> and stops. Not an image goes to the DLT.</dd>
+        </dl>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Drug Facts</h3><span class="pill ok">v1</span></div>
+        <dl>
+          <dt>Listens</dt><dd><code>medicine-extracted</code></dd>
+          <dt>Does</dt><dd>Calls openFDA as a tool, summarizes warnings in 5 bullets or fewer, caches the result for 24 hours.</dd>
+          <dt>Produces</dt><dd><code>medicine-enriched</code></dd>
+          <dt>Edge cases</dt><dd>3 second timeout, backoff retries. If openFDA stays down, passes on <code>source: "unavailable"</code>.</dd>
+        </dl>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Interaction Checker</h3><span class="pill ok">v1</span></div>
+        <dl>
+          <dt>Listens</dt><dd><code>medicine-enriched</code></dd>
+          <dt>Does</dt><dd>Reads the user's cabinet, compares it with the label text, returns a risk level and reasons.</dd>
+          <dt>Produces</dt><dd><code>interaction-checked</code></dd>
+          <dt>Edge cases</dt><dd>No label text means <code>UNKNOWN</code>, never <code>LOW</code>.</dd>
+        </dl>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Chat Concierge</h3><span class="pill ok">v1</span></div>
+        <dl>
+          <dt>Runs in</dt><dd>medstrip-api, using LangChain4j</dd>
+          <dt>Tools</dt><dd><code>listCabinet</code>, <code>getDrugWarnings(name)</code>, <code>getInteractionResult(name)</code></dd>
+          <dt>Memory</dt><dd>Last 10 messages per user, stored in Redis.</dd>
+          <dt>Rules</dt><dd>Answers only from tool results. Refuses dosage advice and diagnosis.</dd>
+        </dl>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Safety Reviewer</h3><span class="pill acc">next</span></div>
+        <dl>
+          <dt>Listens</dt><dd><code>interaction-checked</code></dd>
+          <dt>Does</dt><dd>Acts as a critic. Removes dosage or diagnosis wording and adds "ask a pharmacist" on HIGH and UNKNOWN.</dd>
+          <dt>Produces</dt><dd><code>medicine-approved</code> with <code>reviewNotes</code></dd>
+        </dl>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Schedule Planner</h3><span class="pill mute">later</span></div>
+        <dl>
+          <dt>Listens</dt><dd><code>medicine-approved</code></dd>
+          <dt>Does</dt><dd>Builds a daily plan from the frequency the user enters and label hints such as "take with food". Saves it as <code>schedule:{userId}</code>.</dd>
+        </dl>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Expiry Watcher</h3><span class="pill mute">later</span></div>
+        <dl>
+          <dt>Runs</dt><dd>Once a day on a scheduler.</dd>
+          <dt>Does</dt><dd>Finds cabinet items expiring within 30 days.</dd>
+          <dt>Produces</dt><dd><code>expiry-alert</code></dd>
+        </dl>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>Cabinet Writer</h3><span class="pill ok">v1</span></div>
+        <dl>
+          <dt>Type</dt><dd>Plain code, not an agent.</dd>
+          <dt>Listens</dt><dd><code>interaction-checked</code>, later <code>medicine-approved</code></dd>
+          <dt>Does</dt><dd>Saves the medicine to the cabinet and sets the job to <code>DONE</code>. Same name, strength and expiry is saved once.</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section id="topics">
+    <h2>Kafka topics</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Topic</th><th>Producer</th><th>Consumer</th><th>Key</th></tr></thead>
+        <tbody>
+          <tr><td><code>medicine-photo-uploaded</code></td><td>medstrip-api</td><td>Vision Reader</td><td><code>userId</code></td></tr>
+          <tr><td><code>medicine-extracted</code></td><td>Vision Reader</td><td>Drug Facts</td><td><code>userId</code></td></tr>
+          <tr><td><code>medicine-enriched</code></td><td>Drug Facts</td><td>Interaction Checker</td><td><code>userId</code></td></tr>
+          <tr><td><code>interaction-checked</code></td><td>Interaction Checker</td><td>Cabinet Writer, later Safety Reviewer</td><td><code>userId</code></td></tr>
+          <tr><td><code>medicine-approved</code></td><td>Safety Reviewer</td><td>Cabinet Writer, Schedule Planner</td><td><code>userId</code></td></tr>
+          <tr><td><code>expiry-alert</code></td><td>Expiry Watcher</td><td>Log or notify</td><td><code>userId</code></td></tr>
+          <tr><td><code>medstrip.retry</code></td><td>Any agent</td><td>Same agent after a delay</td><td><code>userId</code></td></tr>
+          <tr><td><code>medstrip.DLT</code></td><td>Any agent</td><td>You, by hand</td><td>original key</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted">Use 3 partitions on each main topic. The key is <code>userId</code> so one user's messages stay in order within each step.</p>
+    <div class="callout">Order is guaranteed per step, not across the whole pipeline. If one user uploads two photos within a few seconds, the second check can run before the first medicine reaches the cabinet. Accept this in version 1. It makes a good stretch drill later.</div>
+  </section>
+
+  <section id="contracts">
+    <h2>Message contracts</h2>
+    <p>Every message carries <code>jobId</code>, <code>userId</code> and <code>schemaVersion</code>. Examples for the two messages you will debug most:</p>
+    <div class="grid2">
+      <pre><code>// medicine-extracted
+{
+  "jobId": "J-1042",
+  "userId": "U1",
+  "name": "Ibuprofen",
+  "strength": "400 mg",
+  "expiry": "2027-03",
+  "confidence": 0.93,
+  "schemaVersion": 1
+}</code></pre>
+      <pre><code>// interaction-checked
+{
+  "jobId": "J-1042",
+  "userId": "U1",
+  "name": "Ibuprofen",
+  "risk": "MEDIUM",
+  "conflictsWith": ["Aspirin"],
+  "reasons": ["Label advises caution with other NSAIDs"],
+  "source": "openFDA",
+  "schemaVersion": 1
+}</code></pre>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Message</th><th>Extra fields</th></tr></thead>
+        <tbody>
+          <tr><td><code>medicine-photo-uploaded</code></td><td><code>s3Key</code>, <code>sha256</code>, <code>uploadedAt</code></td></tr>
+          <tr><td><code>medicine-enriched</code></td><td><code>name</code>, <code>warnings[]</code> (max 5), <code>interactionText</code>, <code>source</code> = <code>openFDA</code>, <code>cache</code> or <code>unavailable</code></td></tr>
+          <tr><td><code>medicine-approved</code></td><td>Same as <code>interaction-checked</code> plus <code>reviewNotes</code></td></tr>
+          <tr><td><code>expiry-alert</code></td><td><code>name</code>, <code>expiry</code>, <code>daysLeft</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="storage">
+    <h2>Redis and S3 layout</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Key</th><th>Type</th><th>Holds</th><th>Expires</th></tr></thead>
+        <tbody>
+          <tr><td><code>job:{jobId}</code></td><td>hash</td><td>status, userId, error reason, last step done</td><td>7 days</td></tr>
+          <tr><td><code>cabinet:{userId}</code></td><td>hash</td><td>medicine id → JSON (name, strength, expiry, last risk)</td><td>none</td></tr>
+          <tr><td><code>fda:{normalizedName}</code></td><td>string</td><td>summarized label text and source</td><td>24 hours</td></tr>
+          <tr><td><code>photo:{sha256}</code></td><td>string</td><td>jobId of the first upload of this photo</td><td>1 hour</td></tr>
+          <tr><td><code>rate:{userId}</code></td><td>counter</td><td>uploads in the current minute (limit 5)</td><td>60 seconds</td></tr>
+          <tr><td><code>chat:{userId}</code></td><td>list</td><td>last 10 chat messages</td><td>24 hours</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted">S3 bucket <code>medstrip-photos</code>, key <code>{userId}/{jobId}.jpg</code>, lifecycle rule to delete after 7 days. Point the AWS SDK at the LocalStack endpoint while developing.</p>
+  </section>
+
+  <section id="api">
+    <h2>REST API (medstrip-api)</h2>
+    <p>No login. Send a synthetic user in the <code>X-User-Id</code> header.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Endpoint</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr><td><code>POST /photos</code></td><td>Multipart image. Checks the rate limit (<code>429</code>), the duplicate hash (returns the existing jobId), then saves to S3, sets <code>UPLOADED</code>, publishes to Kafka, returns <code>202</code> with <code>jobId</code>.</td></tr>
+          <tr><td><code>GET /jobs/{jobId}</code></td><td>Status, plus the result and reasons when finished.</td></tr>
+          <tr><td><code>GET /cabinet</code></td><td>All medicines for the user with expiry and last risk.</td></tr>
+          <tr><td><code>DELETE /cabinet/{medicineId}</code></td><td>Remove a medicine.</td></tr>
+          <tr><td><code>POST /chat</code></td><td>Body <code>{"message": "..."}</code>. Returns the Concierge answer.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="risk">
+    <h2>Risk levels</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Level</th><th>Meaning</th><th>Shown to the user as</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pill ok">LOW</span></td><td>The label text mentions no interaction with anything in the cabinet.</td><td>"No interaction found in the label. This is not a guarantee."</td></tr>
+          <tr><td><span class="pill warn">MEDIUM</span></td><td>The label advises caution, or two items share an ingredient class.</td><td>The reason, plus "check with a pharmacist".</td></tr>
+          <tr><td><span class="pill crit">HIGH</span></td><td>The label warns against combining it with an item in the cabinet.</td><td>The reason, plus "ask a pharmacist before taking both".</td></tr>
+          <tr><td><span class="pill mute">UNKNOWN</span></td><td>No label text was found, or the lookup failed.</td><td>"Could not check. Ask a pharmacist." Never shown as safe.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="failures">
+    <h2>Failure drills</h2>
+    <p>Build the success path first. For each drill, watch it break before you add the fix.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Drill</th><th>What breaks</th><th>Required behaviour</th><th>How to trigger</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="pill warn">1</span> Blurry photo</td>
+            <td>Model returns a low confidence guess. Retrying will not help.</td>
+            <td>Treat it as a result, not an error. Status <code>NEEDS_RETAKE</code>, nothing sent to the DLT.</td>
+            <td>Upload a dark or blurred photo</td>
+          </tr>
+          <tr>
+            <td><span class="pill crit">2</span> Bad model output</td>
+            <td>Model returns text that does not parse into the record.</td>
+            <td>Retry twice, then DLT and status <code>FAILED</code>. Other jobs keep flowing.</td>
+            <td>Make the prompt ask for free text, or mock the model</td>
+          </tr>
+          <tr>
+            <td><span class="pill crit">3</span> openFDA down</td>
+            <td>Calls hang, the consumer falls behind, lag grows.</td>
+            <td>3 second timeout, backoff, serve from cache if present. If not, pass on <code>unavailable</code> and rate the result <code>UNKNOWN</code>.</td>
+            <td>Block <code>api.fda.gov</code> or point the client at a dead port</td>
+          </tr>
+          <tr>
+            <td><span class="pill warn">4</span> Duplicate photo</td>
+            <td>Same photo uploaded twice, or a message replayed, creates two cabinet entries.</td>
+            <td>Hash check returns the first jobId. Cabinet write is idempotent on name, strength and expiry.</td>
+            <td>Upload the same file twice, or replay the topic from the start</td>
+          </tr>
+          <tr>
+            <td><span class="pill crit">5</span> Worker crash</td>
+            <td>Agent dies after doing its work but before the next step.</td>
+            <td>Commit the offset only after the next event is sent. Each step checks <code>job:{jobId}</code> so a replay does nothing twice.</td>
+            <td>Kill medstrip-agents mid-job, then restart</td>
+          </tr>
+          <tr>
+            <td><span class="pill crit">6</span> S3 object missing</td>
+            <td>Event arrives but the image cannot be loaded.</td>
+            <td>Retry with backoff in case of a short delay. Then DLT with the reason and status <code>FAILED</code>.</td>
+            <td>Delete the object before the Vision Reader runs</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="build">
+    <h2>Build order</h2>
+    <ol class="steps">
+      <li class="day">Day 1</li>
+      <li><span>Docker Compose with Kafka, Kafka UI, Redis and LocalStack. Create the topics and the bucket.</span></li>
+      <li><span><b>medstrip-api:</b> <code>POST /photos</code> saves to S3, writes the job to Redis, publishes the event.</span></li>
+      <li><span><b>Vision Reader</b> with Spring AI structured output. Test with three real strip photos.</span></li>
+      <li><span><b>Drug Facts</b> with the openFDA call and the Redis cache.</span></li>
+      <li class="day">Day 2</li>
+      <li><span><b>Interaction Checker</b> and <b>Cabinet Writer</b>. Upload two medicines and see the risk result.</span></li>
+      <li><span><b>Chat Concierge</b> with LangChain4j: tools first, then Redis chat memory.</span></li>
+      <li><span>Failure drills 1 to 3.</span></li>
+      <li class="day">Day 3, if you have time</li>
+      <li><span>Failure drills 4 to 6.</span></li>
+      <li><span><b>Safety Reviewer</b> between Interaction Checker and Cabinet Writer.</span></li>
+    </ol>
+  </section>
+
+  <section id="done">
+    <h2>Done when</h2>
+    <p class="progress" id="progress" aria-live="polite">0 of 10 checked</p>
+    <ul class="checks" id="checks">
+      <li><label><input type="checkbox" id="c1"><span>A clear photo goes from upload to <code>DONE</code> and the medicine appears in <code>GET /cabinet</code>.</span></label></li>
+      <li><label><input type="checkbox" id="c2"><span>Upload returns in under a second, before any agent has finished.</span></label></li>
+      <li><label><input type="checkbox" id="c3"><span>A blurry photo ends as <code>NEEDS_RETAKE</code> and nothing lands in the DLT.</span></label></li>
+      <li><label><input type="checkbox" id="c4"><span>The second medicine is checked against the first and the risk level is stored.</span></label></li>
+      <li><label><input type="checkbox" id="c5"><span>A second lookup of the same drug is served from Redis, not openFDA.</span></label></li>
+      <li><label><input type="checkbox" id="c6"><span>With openFDA blocked, the result is <code>UNKNOWN</code> and never <code>LOW</code>.</span></label></li>
+      <li><label><input type="checkbox" id="c7"><span>Uploading the same photo twice returns the same jobId and one cabinet entry.</span></label></li>
+      <li><label><input type="checkbox" id="c8"><span>Killing the agents app mid-job and restarting still ends in <code>DONE</code> with one cabinet entry.</span></label></li>
+      <li><label><input type="checkbox" id="c9"><span>Chat answers "can I take X with my other medicines?" from the cabinet, remembers the previous question, and refuses a dosage question.</span></label></li>
+      <li><label><input type="checkbox" id="c10"><span>A bad message sits in <code>medstrip.DLT</code> with a reason header and does not block the next job.</span></label></li>
+    </ul>
+    <p class="muted">Ticks are saved in this browser only.</p>
+  </section>
+</div>
+
+<script>
+(function () {
+  var KEY = "medstrip-checks";
+  var boxes = Array.prototype.slice.call(document.querySelectorAll("#checks input"));
+  var out = document.getElementById("progress");
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { saved = {}; }
+  function update() {
+    var n = boxes.filter(function (b) { return b.checked; }).length;
+    out.textContent = n + " of " + boxes.length + " checked";
+  }
+  boxes.forEach(function (b) {
+    if (saved[b.id]) b.checked = true;
+    b.addEventListener("change", function () {
+      saved[b.id] = b.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+      update();
+    });
+  });
+  update();
+})();
+</script>
+
+<!--claude-mermaid-runtime-begin:3477-->
+<style>.mermaid-diagram{margin-block:4px}.mermaid-diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}</style>
+<script src="/_runtime/mermaid-11.16.1.min.js"></script>
+<script>(function(){
+var CFG={"palettes":{"light":{"surface":"#f4efe4","text":"#42392e","line":"#8a7f6d","border":"#7a6c52","bg":"#fffdf8"},"dark":{"surface":"#262b34","text":"#f2f3f5","line":"#a8adb8","border":"#9aa4b8","bg":"#1f232b"}}};
+if(typeof mermaid==='undefined')return;
+var pres=Array.prototype.slice.call(document.querySelectorAll('pre.mermaid')).filter(function(p){if(p.hasAttribute('data-claude-mermaid-claimed'))return false;p.setAttribute('data-claude-mermaid-claimed','1');return true;});
+if(!pres.length)return;
+var mq=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
+var root=document.documentElement;
+var items=pres.map(function(pre){
+var mount=document.createElement('div');mount.className='mermaid-diagram';
+return {pre:pre,mount:mount,src:pre.textContent||''};
+});
+var seq=0;
+var renderGen=0;
+var lastKey='';
+function pageBg(fallback){
+var els=[document.body,document.documentElement];
+for(var i=0;i<els.length;i++){
+var c=els[i]&&getComputedStyle(els[i]).backgroundColor;
+if(c&&c!=='transparent'&&c!=='rgba(0, 0, 0, 0)')return c;
+}
+return fallback;
+}
+function render(){
+var theme=root.getAttribute('data-theme');
+var dark=theme==='dark'||(!!(mq&&mq.matches)&&theme!=='light');
+var pal=dark?CFG.palettes.dark:CFG.palettes.light;
+var bg=pageBg(pal.bg);
+var key=(dark?'d':'l')+'|'+bg;
+if(key===lastKey)return;
+lastKey=key;
+var gen=++renderGen;
+var font=getComputedStyle(document.body).fontFamily||'sans-serif';
+var nat={useMaxWidth:false};
+mermaid.initialize({
+startOnLoad:false,securityLevel:'strict',theme:'base',
+flowchart:nat,sequence:nat,er:nat,state:nat,class:nat,pie:nat,
+gantt:nat,journey:nat,timeline:nat,gitGraph:nat,mindmap:nat,xyChart:nat,
+quadrantChart:nat,sankey:nat,c4:nat,requirement:nat,block:nat,
+packet:nat,kanban:nat,architecture:nat,radar:nat,
+themeVariables:{background:bg,mainBkg:pal.surface,primaryColor:pal.surface,
+primaryTextColor:pal.text,lineColor:pal.line,primaryBorderColor:pal.border,
+nodeBorder:pal.border,clusterBorder:pal.border,edgeLabelBackground:bg,
+clusterBkg:'rgba(127,127,127,0.07)',titleColor:pal.text,
+darkMode:dark,rowOdd:bg,rowEven:'rgba(127,127,127,0.07)',
+attributeBackgroundColorOdd:bg,attributeBackgroundColorEven:'rgba(127,127,127,0.07)',
+fontSize:'16px',fontFamily:font},
+themeCSS:'.node rect, .node circle, .node polygon, .node path, .cluster rect { stroke-width: 2px; }'
+});
+items.forEach(function(it){
+var id='claude-mermaid-'+seq++;
+mermaid.render(id,it.src).then(function(r){
+if(gen!==renderGen)return;
+var prev=it.pre.previousElementSibling;
+if(prev&&prev.className==='mermaid-diagram'&&prev!==it.mount)return;
+it.mount.innerHTML=r.svg;
+if(!it.mount.parentNode)it.pre.parentNode.insertBefore(it.mount,it.pre);
+it.pre.style.display='none';
+},function(){
+var scratch=document.getElementById(id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+scratch=document.getElementById('d'+id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+if(gen!==renderGen)return;
+if(it.mount.parentNode)it.mount.parentNode.removeChild(it.mount);
+it.pre.style.display='';
+});
+});
+}
+render();
+if(mq&&mq.addEventListener)mq.addEventListener('change',render);
+if(typeof MutationObserver!=='undefined')new MutationObserver(render).observe(root,{attributes:true,attributeFilter:['data-theme']});
+})();</script>
+<!--claude-mermaid-runtime-end-->
+
+</body></html>

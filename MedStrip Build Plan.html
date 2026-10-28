@@ -1,0 +1,721 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>MedStrip Build Plan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600&family=JetBrains+Mono:wght@400;500&family=Source+Sans+3:wght@400;500;600&display=swap">
+<style>
+  /* Layout: one reading column. A focus card for the next step sits first, then phases that open into small steps.
+     Palette: cool blue-grey neutrals, one indigo accent. Violet marks agentic steps. Green, amber and red mean status only. */
+  :root {
+    --bg: #f2f4f9;
+    --surface: #ffffff;
+    --fg: #151a2b;
+    --muted: #566078;
+    --line: #d6dbe8;
+    --accent: #2f4bd0;
+    --accent-soft: #e1e7fb;
+    --accent-fg: #ffffff;
+    --agent: #7a3fc4;
+    --agent-soft: #efe5fb;
+    --ok: #17773a;
+    --ok-soft: #e1f2e8;
+    --warn: #9a5b06;
+    --warn-soft: #fcefd9;
+    --crit: #b42318;
+    --crit-soft: #fbe6e3;
+    --code-bg: #e8ebf4;
+    --font-display: "Bricolage Grotesque", "Arial Narrow", system-ui, sans-serif;
+    --font-body: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1220;
+      --surface: #171b2e;
+      --fg: #e6e9f5;
+      --muted: #98a1bd;
+      --line: #2a3050;
+      --accent: #8ea2ff;
+      --accent-soft: #1f2750;
+      --accent-fg: #0f1220;
+      --agent: #c9a6ff;
+      --agent-soft: #2b1f45;
+      --ok: #6ccf8a;
+      --ok-soft: #12301f;
+      --warn: #f0b45a;
+      --warn-soft: #33250e;
+      --crit: #ff8f85;
+      --crit-soft: #3a1b19;
+      --code-bg: #0b0e1a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1220;
+    --surface: #171b2e;
+    --fg: #e6e9f5;
+    --muted: #98a1bd;
+    --line: #2a3050;
+    --accent: #8ea2ff;
+    --accent-soft: #1f2750;
+    --accent-fg: #0f1220;
+    --agent: #c9a6ff;
+    --agent-soft: #2b1f45;
+    --ok: #6ccf8a;
+    --ok-soft: #12301f;
+    --warn: #f0b45a;
+    --warn-soft: #33250e;
+    --crit: #ff8f85;
+    --crit-soft: #3a1b19;
+    --code-bg: #0b0e1a;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.55;
+    padding-block: 32px 72px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  * { box-sizing: border-box; }
+  .wrap { max-width: 56rem; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 600; margin: 0; line-height: 1.15; text-wrap: balance; }
+  h1 { font-size: clamp(2rem, 6vw, 3rem); letter-spacing: -0.015em; }
+  h2 { font-size: 1.5rem; }
+  h4 { font-family: var(--font-body); font-size: 12.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  p { margin: 0; max-width: 65ch; }
+  code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+  code { background: var(--code-bg); padding: 1px 5px; border-radius: 3px; overflow-wrap: anywhere; }
+  .muted { color: var(--muted); }
+  .eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+
+  header { display: flex; flex-direction: column; gap: 14px; }
+  .lede { font-size: 1.12rem; max-width: 58ch; }
+  .overall { display: flex; flex-direction: column; gap: 6px; max-width: 34rem; }
+  .overall-text { font-family: var(--font-mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .overall-text b { color: var(--fg); font-weight: 500; }
+  .bar { height: 8px; border-radius: 4px; background: var(--code-bg); overflow: hidden; }
+  .bar span { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 4px; }
+
+  .pill { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; background: var(--code-bg); color: var(--muted); }
+  .pill.k-s { background: var(--accent-soft); color: var(--accent); }
+  .pill.k-a { background: var(--agent-soft); color: var(--agent); }
+  .pill.k-o { background: var(--code-bg); color: var(--muted); }
+
+  /* focus card */
+  .focus { background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  #focus-dyn { display: flex; flex-direction: column; gap: 12px; }
+  .focus-top { display: flex; justify-content: space-between; gap: 8px 16px; flex-wrap: wrap; align-items: baseline; }
+  .focus h2 { font-size: clamp(1.4rem, 4vw, 1.9rem); }
+  .focus h2 .mono { color: var(--accent); margin-right: 8px; font-weight: 500; }
+  .meta-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .meta-row .mono { color: var(--muted); font-size: 13px; }
+  .think-line b { color: var(--accent); }
+  .trap { background: var(--surface); border-radius: 8px; padding: 10px 12px; font-size: 15px; max-width: 65ch; }
+  .trap b { color: var(--warn); }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; height: 38px; padding: 0 16px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); font: inherit; font-weight: 500; font-size: 14.5px; color: var(--fg); cursor: pointer; }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+  .btn.primary:hover { filter: brightness(1.07); }
+  .btn.sm { height: 30px; padding: 0 12px; font-size: 13px; }
+  .nudge { font-size: 14.5px; background: var(--surface); border-radius: 8px; padding: 9px 12px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; max-width: 65ch; }
+  .drift { border-top: 1px solid var(--accent); padding-top: 12px; }
+  .drift summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+  .drift ol { margin: 10px 0 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 6px; max-width: 65ch; }
+  .allcomplete { display: flex; flex-direction: column; gap: 8px; }
+
+  /* loop and legend */
+  .how { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .how h3 { font-size: 1.15rem; margin-bottom: 8px; }
+  .loop { margin: 0; padding: 0; list-style: none; counter-reset: l; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 10px; }
+  .loop li { counter-increment: l; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 14.5px; display: flex; flex-direction: column; gap: 2px; }
+  .loop li::before { content: counter(l); font-family: var(--font-mono); color: var(--accent); font-weight: 500; font-size: 13px; }
+  .loop b { font-weight: 600; }
+  .legend { display: flex; gap: 8px 18px; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+  .legend span { display: inline-flex; gap: 8px; align-items: center; }
+
+  .toolbar { display: flex; align-items: center; gap: 10px 16px; flex-wrap: wrap; justify-content: space-between; }
+  .seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 10px; background: var(--code-bg); }
+  .seg button { border: 0; background: none; height: 30px; padding: 0 14px; border-radius: 7px; font: inherit; font-size: 14px; font-weight: 500; color: var(--muted); cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); }
+  .status { font-size: 13px; color: var(--muted); }
+
+  /* phases */
+  #phases { display: flex; flex-direction: column; gap: 12px; }
+  .phase { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  .phase > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: minmax(0, 1fr) 9rem 1rem; gap: 14px; align-items: center; padding: 16px 18px; }
+  .phase > summary::-webkit-details-marker { display: none; }
+  .phase > summary::after { content: ""; width: 8px; height: 8px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: rotate(45deg); transition: transform 0.15s; justify-self: end; }
+  .phase[open] > summary::after { transform: rotate(-135deg); }
+  .ptitle { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .ptitle .eyebrow { color: var(--muted); }
+  .ptitle h3 { font-size: 1.25rem; }
+  .pprog { display: flex; flex-direction: column; gap: 5px; align-items: flex-end; font-family: var(--font-mono); font-size: 12.5px; color: var(--muted); }
+  .pprog .bar { width: 100%; height: 6px; }
+  .phase.complete .bar span { background: var(--ok); }
+  .phase.complete .pcount { color: var(--ok); }
+  .pbody { padding: 0 18px 18px; display: flex; flex-direction: column; gap: 14px; }
+  .goal { color: var(--muted); }
+  .learn { display: flex; gap: 6px; flex-wrap: wrap; }
+  .learn span { font-size: 13px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .warnbox { background: var(--warn-soft); border-radius: 8px; padding: 10px 12px; font-size: 15px; max-width: 65ch; }
+  .warnbox b { color: var(--warn); }
+
+  .steps { display: flex; flex-direction: column; border-top: 1px solid var(--line); }
+  .step { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); align-items: start; }
+  .step:last-child { border-bottom: 0; }
+  .chk { width: 20px; height: 20px; margin: 3px 0 0; accent-color: var(--accent); cursor: pointer; }
+  .sd > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 2.6rem minmax(0, 1fr) auto; gap: 8px; align-items: baseline; padding: 2px 0; }
+  .sd > summary::-webkit-details-marker { display: none; }
+  .sid { color: var(--accent); font-weight: 500; }
+  .stitle { font-weight: 600; }
+  .smeta { display: flex; gap: 10px; align-items: center; }
+  .smeta .mono { color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+  .step.done .stitle { color: var(--muted); font-weight: 500; }
+  .step.done .sid { color: var(--ok); }
+  .sbody { display: flex; flex-direction: column; gap: 14px; padding: 12px 0 4px 2.6rem; }
+  .sbody > div { display: flex; flex-direction: column; gap: 6px; }
+  .think { background: var(--accent-soft); border-radius: 8px; padding: 10px 12px; }
+  .think h4 { color: var(--accent); }
+  .fr { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .fr li { display: grid; grid-template-columns: 5.4rem minmax(0, 1fr); gap: 8px; align-items: baseline; }
+  .fr code { font-size: 11.5px; justify-self: start; }
+  textarea, input[type="text"] { width: 100%; font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  textarea { resize: vertical; }
+  textarea:focus, input[type="text"]:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+  label.small { font-size: 13px; color: var(--muted); }
+
+  .only-remaining .step.done, .only-remaining .phase.complete { display: none; }
+
+  /* parking lot */
+  .park { display: flex; flex-direction: column; gap: 14px; }
+  .park h2 { padding-top: 24px; border-top: 1px solid var(--line); }
+  .parkform { display: flex; gap: 8px; }
+  .parklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .parklist li { display: flex; gap: 10px; align-items: center; justify-content: space-between; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; }
+  .parklist li span { min-width: 0; overflow-wrap: anywhere; }
+  .notnow { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  .notnow li { padding: 12px 16px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 2px; }
+  .notnow li:last-child { border-bottom: 0; }
+  .notnow b { font-weight: 600; }
+  .notnow span { color: var(--muted); font-size: 15px; }
+
+  @media (max-width: 600px) {
+    .phase > summary { grid-template-columns: minmax(0, 1fr) 1rem; }
+    .pprog { grid-column: 1 / -1; grid-row: 2; align-items: stretch; flex-direction: row; align-items: center; gap: 10px; }
+    .pprog .bar { flex: 1; }
+    .sd > summary { grid-template-columns: 2.4rem minmax(0, 1fr); }
+    .smeta { grid-column: 2; }
+    .sbody { padding-left: 0; }
+    .fr li { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .bar span { transition: width 0.25s ease; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Build plan · system design and agentic system design</span>
+    <h1>MedStrip Build Plan</h1>
+    <p class="lede" id="lede">Small steps, one design idea each. Do them in order. Anything else goes in the parking lot.</p>
+    <div class="overall">
+      <div class="bar" role="progressbar" aria-label="Overall progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="overall-bar"><span></span></div>
+      <div class="overall-text" id="overall-text"></div>
+    </div>
+  </header>
+
+  <section class="focus" aria-labelledby="focus-h">
+    <div id="focus-dyn"></div>
+    <details class="drift">
+      <summary>Drift check: three questions before you write code</summary>
+      <ol>
+        <li>Which tag does this step have: system design, agentic design or setup? If what you are about to do has no tag, stop.</li>
+        <li>Is it the next step shown above? If not, write the idea in the parking lot and come back.</li>
+        <li>Can you say the design choice in two sentences? If not, answer the design question on paper first.</li>
+      </ol>
+    </details>
+  </section>
+
+  <section class="how">
+    <div>
+      <h3>Every step follows the same loop</h3>
+      <ol class="loop">
+        <li><b>Design</b>Answer the design question on paper. 15 minutes.</li>
+        <li><b>Build</b>Write the smallest version that meets the requirements.</li>
+        <li><b>Go live</b>When the step says so, switch that console screen from mock to your API.</li>
+        <li><b>Break it</b>Run the failure drill if the step has one.</li>
+        <li><b>Note</b>Write one line on what you learned. These become your interview stories.</li>
+      </ol>
+    </div>
+    <div class="legend" aria-label="Step tags">
+      <span><span class="pill k-s">System design</span>data, APIs, async, caching, failures</span>
+      <span><span class="pill k-a">Agentic design</span>agents, tools, workflows, humans</span>
+      <span><span class="pill k-o">Setup</span>tools and wiring</span>
+    </div>
+  </section>
+
+  <div class="toolbar">
+    <div class="seg" role="group" aria-label="Show steps">
+      <button type="button" id="f-all" aria-pressed="true">All steps</button>
+      <button type="button" id="f-rem" aria-pressed="false">Remaining</button>
+    </div>
+    <span class="status" id="status" aria-live="polite"></span>
+  </div>
+
+  <div id="phases"></div>
+
+  <section class="park" id="parking-section">
+    <h2>Parking lot</h2>
+    <p class="muted">When an idea shows up in the middle of a step, write it here and go back to the step. Look at this list after phase 11, or when you can name the design idea it teaches.</p>
+    <form class="parkform" id="park-form">
+      <input type="text" id="park-in" placeholder="An idea to do later" aria-label="An idea to do later" maxlength="200" autocomplete="off">
+      <button class="btn primary" type="submit">Park it</button>
+    </form>
+    <ul class="parklist" id="park-list"></ul>
+
+    <h2>Not now</h2>
+    <p class="muted">These are the usual ways this project loses focus. They are good ideas for later, and not part of the learning goal.</p>
+    <ul class="notnow">
+      <li><b>Login, real users and Cognito</b><span>One synthetic user id teaches the same design. Revisit after phase 11.</span></li>
+      <li><b>Polishing the console</b><span>It is already good enough to keep you motivated. Spend that time on the next step.</span></li>
+      <li><b>Python, LangGraph or a second stack</b><span>A different goal. Park it until MedStrip is finished.</span></li>
+      <li><b>RAG, vector databases and embeddings</b><span>MedStrip uses tools and rules. RAG belongs in its own project.</span></li>
+      <li><b>Kubernetes and cloud deployment</b><span>Docker Compose is enough here. Deployment is a later project.</span></li>
+      <li><b>Comparing models and frameworks</b><span>Pick one, finish the step, and compare after phase 9 using your own logs.</span></li>
+      <li><b>Rewriting working steps to be cleaner</b><span>Write the idea in docs/decisions.md and fix it after the phase is done.</span></li>
+    </ul>
+  </section>
+</div>
+
+<noscript>This page needs JavaScript to show the steps.</noscript>
+
+<script>
+(function () {
+  "use strict";
+
+  var KIND = { s: "System design", a: "Agentic design", o: "Setup" };
+  function S(id, t, m, k, b, q, d) { return { id: id, t: t, m: m, k: k, b: b, q: q, d: d }; }
+
+  var PHASES = [
+    { name: "Set up the workshop",
+      goal: "Everything runs on your laptop. No features yet.",
+      learn: ["System context diagram", "Sync vs async", "A local copy of production"],
+      trap: "Do not spend a weekend tuning Docker or your IDE. The goal is five green lights, not a perfect setup.",
+      steps: [
+        S("0.1", "Check your tools", 10, "o", ["Java 17 or newer, Docker Desktop and Node 18 or newer run from a terminal.", "A git repository named medstrip exists with folders api, agents, web and docs."], "Why keep api and agents as two apps in one repository?", "java -version, docker --version and node --version all print a version, and the first commit is made."),
+        S("0.2", "Draw the big picture", 20, "s", ["Draw the user, medstrip-api, medstrip-agents, Kafka, Redis, S3, openFDA and the model as boxes.", "Label every arrow as sync or async.", "Mark which store is the source of truth for the cabinet and for job status."], "Why is upload a separate app from the agents? What breaks if the upload endpoint calls the model directly?", "A photo of your drawing is saved in docs/."),
+        S("0.3", "Run Redis in Docker", 20, "o", ["docker-compose.yml starts Redis with a volume.", "redis-cli PING answers PONG.", "A key you set survives docker compose restart."], "What would you lose if the container is deleted, and does that matter for each thing you plan to keep in Redis?", "PONG, and the test key is still there after a restart."),
+        S("0.4", "Add Kafka and Kafka UI", 30, "o", ["Kafka runs in KRaft mode, with no ZooKeeper.", "Kafka UI opens in the browser.", "A topic named smoke-test with 3 partitions exists."], "What does a message key decide? Why 3 partitions here and not 30?", "You see smoke-test in Kafka UI and can send one message to it."),
+        S("0.5", "Add LocalStack S3", 20, "o", ["LocalStack runs with S3 enabled.", "Bucket medstrip-photos exists.", "The endpoint, region and test credentials live in one config file."], "What stays the same and what changes when you move from LocalStack to real AWS?", "awslocal s3 ls, or the SDK, lists the bucket."),
+        S("0.6", "Create the medstrip-api skeleton", 30, "o", ["Spring Boot app with GET /health returning status UP.", "Redis, Kafka and S3 endpoints come from application.yml, not from code.", "No business code yet."], "Which settings change between your laptop and production, and where should each live?", "curl localhost:8080/health returns UP and the app starts with all three connections configured."),
+        S("0.7", "Open the console in mock mode", 15, "o", ["Unzip medstrip-web, run npm install and npm run dev.", "The console opens at localhost:5173 and every screen works on sample data."], "Which screen will you make real first, and why that one?", "You have clicked through all 7 screens once.")
+      ] },
+    { name: "Cabinet in Redis",
+      goal: "Your first real feature. Small on purpose, so you can focus on how to model the data.",
+      learn: ["Data modelling in Redis", "Idempotent writes", "Failing fast when a dependency is down"],
+      trap: "Do not add login, users or a database. One synthetic user id is enough. Do not polish the console yet.",
+      steps: [
+        S("1.1", "Model one medicine", 20, "s", ["A Medicine has name, strength, expiry (YYYY-MM), addedAt and source.", "Name and strength are required. Expiry must match YYYY-MM.", "The id is a hash of lowercase name, strength and expiry, so the same medicine always gets the same id."], "Why derive the id from the content instead of generating a random one?", "A unit test shows the same input gives the same id and a bad expiry is rejected."),
+        S("1.2", "Choose the Redis shape", 20, "s", ["Compare three shapes: one hash per user, one key per medicine, and a set of ids plus separate keys.", "Pick one and write it in docs/decisions.md as ADR-1.", "The key is cabinet:{userId} and has no expiry time."], "What happens with 10,000 medicines for one user? Which operations stay fast in your shape?", "ADR-1 is written in one short paragraph with the trade-off."),
+        S("1.3", "POST /cabinet", 30, "s", ["The X-User-Id header is required. Missing it returns 400.", "A valid body returns 201 with the medicine.", "Posting the same medicine again returns 200 and does not create a second entry."], "If two requests add the same medicine at the same moment, can you still end up with one entry?", "Two identical curl calls leave the hash length at 1."),
+        S("1.4", "GET /cabinet", 20, "s", ["Returns the user's medicines sorted by expiry, soonest first.", "Each item has daysLeft, calculated on the server when you ask.", "An empty cabinet returns an empty list, not an error."], "Why calculate daysLeft on read instead of storing it?", "The list matches what the React cabinet screen expects."),
+        S("1.5", "DELETE /cabinet/{id}", 15, "s", ["Returns 204 when the medicine was removed.", "Returns 404 when the id is unknown.", "Only the caller's own cabinet is touched."], "Should deleting something that is already gone be an error? Pick one answer and write down why.", "Both cases are covered by a test."),
+        S("1.6", "Handle Redis being down", 20, "s", ["If Redis is unreachable, the API returns 503 with a short JSON message.", "No stack trace reaches the caller.", "The app recovers on its own when Redis comes back."], "When a dependency is down, when do you fail fast and when do you serve something older?", "You stop the Redis container, call GET /cabinet and see a clean 503."),
+        S("1.7", "Make the Cabinet screen real", 30, "o", ["In engine.js, replace the cabinet functions with fetch calls to /api/cabinet.", "The console sends X-User-Id: U1.", "Everything else stays on mock data."], "What does the screen show for fields your API does not have yet, like risk?", "Add and remove a medicine in the console, restart the API, and the data is still there.")
+      ] },
+    { name: "Upload and job status",
+      goal: "A photo goes in, a job id comes out right away, and the work happens later.",
+      learn: ["Async request and reply", "Idempotency keys", "Rate limiting", "Commit the offset after the work"],
+      trap: "Do not call the AI model in this phase. It is about async design, not AI. Skip image resizing and virus scanning.",
+      steps: [
+        S("2.1", "Accept a photo", 30, "s", ["POST /photos takes a multipart JPEG or PNG up to 5 MB.", "A wrong type returns 415. A file that is too big returns 413.", "A valid upload returns 202 with a jobId."], "Why return 202 before any work is done?", "Three curl calls prove the three outcomes."),
+        S("2.2", "Store the photo in S3", 30, "s", ["The object key is {userId}/{jobId}.jpg in bucket medstrip-photos.", "If S3 fails, the API returns 503 and creates no job.", "The file is not kept on the API's disk."], "If the app crashes right after the S3 write but before anything else, what is left behind?", "The object appears in LocalStack after an upload."),
+        S("2.3", "Create the job record", 30, "s", ["Redis hash job:{jobId} holds status UPLOADED, userId, s3Key and createdAt.", "It expires after 7 days.", "GET /jobs/{jobId} returns it, or 404 if unknown."], "Why is job status kept in Redis and not in the S3 object or in Kafka?", "You can read the job back after an upload."),
+        S("2.4", "Publish the upload event", 30, "s", ["Topic medicine-photo-uploaded, key userId.", "Payload has jobId, userId, s3Key and schemaVersion 1.", "The producer uses acks=all and idempotence."], "The job is saved but the publish fails. What do you do? Pick a rule and write it down.", "You see the message in Kafka UI with the right key and partition."),
+        S("2.5", "Add a do-nothing consumer", 40, "s", ["Create the second Spring Boot app, medstrip-agents.", "A consumer in group vision-group reads the event, sets the job to READING and logs it.", "The offset is committed only after the status update."], "Why commit the offset after the work and not before?", "An upload turns the job from UPLOADED to READING without any AI."),
+        S("2.6", "Rate limit uploads", 30, "s", ["Redis counter rate:{userId} allows 5 uploads per minute.", "The 6th returns 429 with Retry-After.", "The counter expires by itself."], "What is the burst problem at the edge of a fixed window, and when would you use a sliding window?", "A loop of 6 uploads gets exactly one 429."),
+        S("2.7", "Detect duplicate photos", 30, "s", ["Compute SHA-256 of the file.", "Redis key photo:{userId}:{sha} holds the first jobId for 1 hour.", "The same photo returns the existing job with 200 and creates nothing new."], "Why include the userId in the key? What goes wrong without it?", "Uploading the same file twice gives one job id."),
+        S("2.8", "Show job status in the console", 30, "o", ["The Add medicine screen uploads to POST /photos.", "It polls GET /jobs/{id} every second until a final status.", "Timeline steps beyond READING stay on sample text for now."], "Polling, server-sent events or websockets? Pick polling now and write down when you would switch.", "You upload a photo in the console and watch the status change.")
+      ] },
+    { name: "Vision Reader, your first agent",
+      goal: "An agent reads a strip photo and returns a structured reading with a confidence score.",
+      learn: ["Agent contracts", "Structured output", "Outcome vs error", "Cost and latency logging"],
+      trap: "Do not tune prompts for hours. Get three photos working, write the contract, and move on. Better prompts can wait.",
+      steps: [
+        S("3.1", "Say hello to the model", 30, "a", ["Spring AI calls the model with a plain text prompt.", "The API key comes from an environment variable and is never committed.", "The call has a timeout."], "What belongs in the prompt and what belongs in code?", "A test prints one model reply."),
+        S("3.2", "Get structured output", 40, "a", ["A MedicineReading has name, strength, expiry and confidence (0 to 1).", "Five sample strings like 'Ibuprofen 400 mg EXP 06/2027' parse into it.", "Unparseable output throws one clear exception type."], "Why force a structure instead of reading free text?", "All five samples parse and one broken sample fails cleanly."),
+        S("3.3", "Write the agent contract", 30, "a", ["Describe the input, the output JSON, schemaVersion and what confidence means.", "List the outcomes that are not errors, like a blurry photo.", "List the real errors, like an unreadable file."], "What is the difference between an error and a valid outcome that is not a success?", "docs/agents/vision-reader.md exists and fits on one page."),
+        S("3.4", "Read a real photo", 45, "a", ["Load the image from S3 and send it to a vision model.", "The call times out after 20 seconds.", "Photos over the model's size limit are rejected with a clear message."], "Who owns image size limits, the API or the agent?", "Three real strip photos of your own return sensible readings."),
+        S("3.5", "Use the confidence score", 30, "a", ["Confidence 0.7 or higher continues.", "Between 0.5 and 0.7 is marked NEEDS_CONFIRMATION. The gate itself comes in phase 7.", "Below 0.5 ends as NEEDS_RETAKE with a helpful message and no dead letter."], "Where do the thresholds live, and how would you tune them using real data?", "A blurry photo ends as NEEDS_RETAKE and nothing lands in a dead letter topic."),
+        S("3.6", "Publish medicine-extracted", 30, "s", ["Payload has jobId, userId, name, strength, expiry, confidence and schemaVersion 1.", "Job status becomes LOOKING_UP.", "The offset is committed after the publish succeeds."], "What if the publish works but the status update fails?", "The event is visible in Kafka UI and the job status matches."),
+        S("3.7", "Log every agent run", 30, "a", ["Each run records agent, jobId, duration, tokens, status and a one-line summary.", "Keep them in a Redis list for now. DynamoDB comes later.", "A logging failure never breaks the agent."], "Why track time and tokens for every agent from day one?", "After three uploads you can see the cost and time of each."),
+        S("3.8", "Show the Vision Reader step live", 30, "o", ["The timeline shows the Vision Reader note and confidence from the real job.", "Later steps stay on sample text."], "Which fields does the console need from the job that the API does not return yet?", "The console shows the real reading of your photo.")
+      ] },
+    { name: "Drug Facts",
+      goal: "Look up official label text, cache it, and survive the lookup failing.",
+      learn: ["Cache-aside", "Timeouts and backoff", "Graceful degradation", "Tool vs agent"],
+      trap: "Do not build RAG or a vector database. Label lookup is one API call and a cache.",
+      steps: [
+        S("4.1", "Call openFDA", 40, "s", ["Look up a drug label by brand name.", "The timeout is 3 seconds.", "Pull out warnings and drug_interactions. No result returns an empty answer, not an error."], "Why must every outbound call have a timeout?", "Three drugs return label text and one nonsense name returns empty."),
+        S("4.2", "Cache the label in Redis", 30, "s", ["Key fda:{normalizedName} with a 24 hour expiry.", "A second lookup never calls openFDA.", "Normalizing means lowercase and trimmed."], "What goes wrong when the cache holds an old label, and how long is too long?", "The second lookup shows in the logs as a cache hit."),
+        S("4.3", "Summarize the label", 40, "a", ["The model turns label text into at most 5 plain bullets.", "It must not add dosage advice or safety promises.", "Output is structured. The lookup itself is plain code, not an agent."], "Which parts of Drug Facts need a model and which are just code? Why does it matter?", "Five labels give clean bullet lists with no dosage words."),
+        S("4.4", "Survive openFDA being down", 40, "s", ["Three attempts with growing waits.", "If all fail and the cache has the label, use the cache.", "If the cache is empty, pass source=unavailable and never guess."], "When is an old answer better than no answer, and when is it worse?", "You block the host and see all three behaviours."),
+        S("4.5", "Publish medicine-enriched", 30, "s", ["Payload has jobId, name, warnings (max 5), interactionText, source and schemaVersion 1.", "source is openFDA, cache or unavailable.", "Job status becomes CHECKING."], "Why carry source in the message instead of hiding it?", "The event shows up with the right source in each case.")
+      ] },
+    { name: "Finish the chain",
+      goal: "Interaction check, safety review and the cabinet write, one agent after another.",
+      learn: ["Sequential workflow", "Rules before models", "Critic agent", "Idempotent consumers"],
+      trap: "Do not add more agents. Four steps in the chain is enough. Rules come first and the model second.",
+      steps: [
+        S("5.1", "Write interaction rules in code", 40, "s", ["A rule table lists drug pairs and a risk level. For example warfarin with aspirin is HIGH.", "checkAgainst(cabinet, newMedicine) returns the highest risk, the conflicts and the reasons.", "Rules live in a config file you can edit without changing code."], "Why start with plain rules before using a model?", "Unit tests cover LOW, MEDIUM and HIGH cases."),
+        S("5.2", "Interaction Checker consumer", 40, "s", ["Consumes medicine-enriched, loads the cabinet from Redis and applies the rules.", "If source is unavailable, the risk is UNKNOWN and never LOW.", "Publishes interaction-checked."], "What is the cost of a false LOW compared with a false HIGH?", "A fake openFDA outage produces UNKNOWN."),
+        S("5.3", "Add a reasoning layer", 45, "a", ["The model reads the label text and the cabinet and writes plain reasons.", "The rules decide the risk level. The model may raise it and never lower it.", "If the model fails, the rules result is used."], "Who is in charge, the rules or the model? What would you lose by flipping it?", "A test shows the model cannot downgrade HIGH to LOW."),
+        S("5.4", "Build the Safety Reviewer", 45, "a", ["A separate agent checks the reasons text.", "It removes dosage advice and safety promises.", "It adds 'ask a pharmacist' on HIGH and UNKNOWN, then publishes medicine-approved."], "Why is the reviewer a separate agent and not just more lines in one prompt?", "Ten test texts, including bad ones, all come out clean."),
+        S("5.5", "Write the Cabinet Writer", 30, "s", ["Consumes medicine-approved and saves to the cabinet.", "The same name, strength and expiry is saved once.", "Job status becomes DONE."], "Is every step in this chain safe to run twice? Check each one.", "Replaying the topic leaves the cabinet count unchanged."),
+        S("5.6", "Run the whole chain once", 30, "s", ["Upload a photo and watch it reach DONE.", "Open Kafka UI and find the event for each topic with its partition and offset.", "Draw the real sequence diagram from those offsets."], "Where could a message be lost or duplicated in this chain?", "Your diagram matches what Kafka UI shows."),
+        S("5.7", "Show the full Add medicine screen live", 45, "o", ["The timeline shows every step from real job data.", "The result card shows risk, conflicts and reasons.", "Gates stay on sample data until phase 7."], "What does the API need to return per step so the screen stays simple?", "A real upload shows the same timeline you saw in mock mode.")
+      ] },
+    { name: "Failures and reliability",
+      goal: "Break each part on purpose and fix it. This is where most of the system design learning is.",
+      learn: ["Retry vs dead letter", "Poison messages", "At-least-once delivery", "Consumer lag"],
+      trap: "Do not rebuild the failures in a new framework or add monitoring tools. Break one thing at a time and fix it.",
+      steps: [
+        S("6.1", "Retry with backoff", 40, "s", ["Retryable errors, like a timeout, retry up to 4 times with waits of 1, 2 and 4 seconds.", "Errors that can never work, like a parse failure, do not retry.", "Each attempt is logged."], "How do you decide whether an error is worth retrying?", "A timeout retries 4 times and a parse failure does not."),
+        S("6.2", "Dead letter topic", 40, "s", ["medstrip.DLT receives messages that run out of retries.", "Each carries a header with the reason, the source topic and the attempt count.", "The job becomes FAILED with a readable message."], "What stops one bad message from blocking everything behind it?", "A bad message lands in the DLT and the next upload still works."),
+        S("6.3", "Drill: bad model output", 30, "a", ["Make the model return junk three times.", "The event goes to the DLT.", "The job shows FAILED and says why."], "Is a model reply that does not parse a retryable error? What changes if you retry with a stricter prompt?", "The drill runs and you can explain what you saw."),
+        S("6.4", "Drill: photo missing in S3", 20, "s", ["Delete the object before the Vision Reader runs.", "It retries in case of a short delay, then goes to the DLT.", "The job says the photo could not be found."], "Which failures are temporary and which are permanent?", "The drill ends in the DLT with a clear reason."),
+        S("6.5", "Drill: worker crash", 30, "s", ["Kill medstrip-agents between the status update and the commit.", "Restart it. The job still reaches DONE.", "The cabinet has one entry, not two."], "At-least-once delivery means a step can run twice. Which of your steps are safe to repeat?", "One cabinet entry after the crash."),
+        S("6.6", "Drill: blurry photo", 20, "a", ["Upload a blurry photo.", "The job ends as NEEDS_RETAKE.", "Nothing is written to the DLT."], "Why is a blurry photo an outcome and not an error?", "The status and message are right and the DLT is empty."),
+        S("6.7", "Activity endpoints", 40, "s", ["GET /activity/runs, /activity/events and /activity/dlt return recent items, newest first.", "POST /activity/dlt/{id}/replay sends the message back to its source topic.", "Replaying twice does nothing the second time."], "Why must replay be safe to call twice?", "You replay a dead letter after fixing the cause and it succeeds."),
+        S("6.8", "Watch consumer lag", 30, "s", ["Send 200 uploads while the consumer sleeps 500 ms per message.", "Read lag with kafka-consumer-groups.sh --describe.", "Explain what to scale and what not to."], "What limits how many consumers can help?", "You explain lag in your own words and name the limit."),
+        S("6.9", "Make Activity live", 30, "o", ["The Activity screen shows real runs, events and dead letters.", "The replay button works."], "What would you add so an on-call person can find a failed job in under a minute?", "You trigger a failure and find it in the console.")
+      ] },
+    { name: "Humans in the loop",
+      goal: "Workflows pause for a person, survive restarts, and resume or time out.",
+      learn: ["State machines", "Durable pause and resume", "Timeouts", "Idempotent decisions"],
+      trap: "Do not build a workflow engine or bring in Step Functions yet. A status field and two endpoints are enough.",
+      steps: [
+        S("7.1", "Draw the job state machine", 30, "s", ["List every status and every allowed move between them.", "Say who triggers each move: an agent, a person or a timer.", "Illegal moves are rejected in code."], "Where does the truth about a job's state live? What if two events arrive out of order?", "A diagram, and a transition function with tests."),
+        S("7.2", "Gate A: pause on an unsure read", 45, "s", ["Confidence 0.5 to 0.7 sets AWAITING_CONFIRMATION.", "The pending question is saved in Redis as gate:{jobId}.", "The consumer commits and moves on. Nothing waits in memory."], "Why must the consumer not wait for the person?", "The job pauses and the next upload is processed normally."),
+        S("7.3", "Decision endpoint", 45, "s", ["POST /jobs/{id}/decision takes approve with edited values, or reject.", "Approve publishes medicine-extracted with confirmedBy=user.", "A second decision on the same job returns 409."], "What if the person double-clicks, or two tabs send a decision?", "Both decisions are tested, including the duplicate."),
+        S("7.4", "Gate B: acknowledge a warning", 40, "s", ["HIGH or UNKNOWN risk sets AWAITING_ACK instead of saving.", "Approve saves the medicine. Discard cancels.", "Nothing reaches the cabinet without the person's answer."], "Why is Gate B after the Safety Reviewer and not before?", "Adding warfarin to a cabinet with aspirin pauses the job."),
+        S("7.5", "Timeouts for gates", 45, "s", ["A scheduled task finds gates older than 24 hours and cancels the job.", "The reason is stored: no answer in 24 h.", "For testing, set the limit to 1 minute."], "Who owns the clock? What if the scheduler is down for a day?", "A test gate cancels itself after the shortened time."),
+        S("7.6", "GET /approvals", 30, "s", ["Returns every pending gate with its type, job and deadline.", "Sorted by soonest deadline.", "Decided gates are not listed."], "What does the person need to see to decide without opening the job?", "The list matches the Approvals screen."),
+        S("7.7", "Make Approvals and gates live", 45, "o", ["Gates A and B work in Add medicine.", "The Approvals screen lists real pending items.", "Simulate no answer uses the short timeout."], "Which actions still need a confirmation step in the UI?", "You pause, decide and cancel a job from the console.")
+      ] },
+    { name: "Chat with routing",
+      goal: "A chat assistant that uses tools, remembers the last messages, and has a guardrail the model cannot talk its way past.",
+      learn: ["Tool calling", "Chat memory", "Guardrails outside the model", "Routing"],
+      trap: "Do not compare five chat libraries or add more tools than listed. Three tools and one router.",
+      steps: [
+        S("8.1", "Say hello with LangChain4j", 30, "a", ["An AI service interface with a system message.", "One question gets one answer.", "The model and key come from config."], "What is the difference between calling a model and defining an AI service?", "A question returns an answer in a test."),
+        S("8.2", "Tool: listCabinet", 40, "a", ["A tool reads the cabinet from Redis for the caller.", "'What do I have?' is answered from the tool, not from guesses.", "The tool gets the user id from the request, not from the model."], "Why pass the user id outside the model?", "The answer matches the real cabinet."),
+        S("8.3", "Tool: getDrugWarnings", 30, "a", ["The tool reuses the Drug Facts cache.", "An unknown drug returns a clear 'not found'.", "The model must say where the information came from."], "Use a tool, or put the data in the prompt? When does each win?", "Warnings for aspirin come from the cache and name the source."),
+        S("8.4", "Chat memory in Redis", 40, "a", ["Keep the last 10 messages per user in chat:{userId}.", "'What about warfarin?' after an interaction question works.", "Memory expires after 24 hours."], "What goes wrong if memory grows without a limit?", "The follow-up question works without repeating the context."),
+        S("8.5", "Guardrail outside the model", 30, "a", ["Rules catch dosage questions before any model call.", "The reply says to follow the label or ask a pharmacist.", "No model call is logged for blocked questions."], "Why not rely on the prompt alone for safety?", "Ten phrasings of a dosage question are all blocked."),
+        S("8.6", "Router and specialists", 50, "a", ["Classify the question into interactions, label facts, expiry or cabinet, with a fallback.", "Each route has a small specialist with only the tools it needs.", "The response includes route, agent and tools used."], "One smart agent with many tools, or a router with small specialists? Compare cost, speed and failure isolation.", "Your own notes compare the two using real token counts."),
+        S("8.7", "Make Ask live", 30, "o", ["The Ask screen calls POST /chat.", "The route, agent, tools and memory count show on each answer."], "What would you log to debug a wrong answer next week?", "You ask six different questions and see six sensible routes.")
+      ] },
+    { name: "Cabinet review with a supervisor",
+      goal: "The big agentic workflow: plan, run in parallel, draft, critique, and get approval.",
+      learn: ["Supervisor pattern", "Parallel fan-out and fan-in", "Partial results", "Evaluator loop", "Orchestration vs choreography"],
+      trap: "Do not add a fifth auditor or fancy report layouts. The learning is in the parallel runs, the loop and the approval.",
+      steps: [
+        S("9.1", "Four auditors as plain functions", 50, "s", ["Interaction, Expiry, Duplicate and Label auditors each return a list of findings.", "Each finding has a risk and a sentence.", "Unit tests cover each auditor on its own."], "Why write them as plain functions before making any of them an agent?", "All four have tests."),
+        S("9.2", "Run them in parallel", 45, "s", ["Run the four at the same time with a 3 second limit per lane.", "Log the parallel time and the one-after-another time.", "One lane failing does not stop the others."], "Why is the total time the slowest lane and not the sum?", "The log shows both times and the gap."),
+        S("9.3", "Merge partial results", 30, "s", ["If a lane times out, the report is marked partial and names the missing lane.", "The review still finishes.", "The partial flag is stored with the review."], "When do you fail the whole job and when do you return less?", "A forced timeout gives a partial report."),
+        S("9.4", "Supervisor plan", 45, "a", ["The supervisor decides which auditors are needed.", "With fewer than 2 medicines it skips the interaction and duplicate checks.", "The plan is stored with the review."], "When is an LLM supervisor worth it, and when is a fixed workflow better?", "A cabinet of one medicine skips two auditors."),
+        S("9.5", "Report Writer", 45, "a", ["A model drafts the report from the findings.", "Output is structured: title, summary and sections.", "It uses only the findings it was given."], "How do you stop the writer from inventing findings?", "A draft contains no finding that was not in the input."),
+        S("9.6", "Critic loop", 50, "a", ["The Safety Reviewer approves, or sends back notes.", "The writer revises. The loop stops after 3 rounds.", "After round 3 a person decides."], "What is your stop condition, and what happens if the loop never converges?", "You force a stubborn critic and see exactly 3 rounds."),
+        S("9.7", "Gate C: approve the report", 45, "s", ["Status AWAITING_APPROVAL until the person approves, asks for changes or discards.", "A comment goes back to the writer for another round.", "The review expires after 7 days."], "Why can nothing be sent before this approval?", "All four outcomes are tested."),
+        S("9.8", "Save the report and notify", 40, "s", ["Approved reports go to S3 under reports/{userId}/{reviewId}.json.", "An SNS message announces it.", "Saving twice does not send two notifications."], "What if S3 works and SNS fails?", "The report is in S3 and the message is in LocalStack SNS."),
+        S("9.9", "Compare orchestration and choreography", 30, "s", ["Write half a page on flow A (events) and flow B (supervisor), using your own logs.", "Say which one you would pick for a new feature and why."], "Which is easier to debug, and which survives a crashed agent better?", "A short ADR in docs/decisions.md."),
+        S("9.10", "Make Review live", 45, "o", ["POST /reviews starts a review and GET /reviews/{id} returns lanes, rounds and status.", "The Review screen shows real progress."], "What does the screen need so a refresh does not lose the review?", "You run a full review from the console.")
+      ] },
+    { name: "AWS extras",
+      goal: "Swap in managed services one at a time. Every step here is optional.",
+      learn: ["Managed services trade-offs", "Cost control", "Scheduled work"],
+      trap: "Do not turn on real AWS before step 10.0. Cost surprises are the usual way this phase goes wrong. Skip any step you do not need.",
+      steps: [
+        S("10.0", "Set an AWS budget alert", 15, "o", ["Create a monthly budget with an email alert at a low amount.", "Note the region you will use.", "Do not enable any paid service before this is done."], "What is the cheapest way to find out you made a mistake?", "A budget alert email is set up."),
+        S("10.1", "Agent runs in DynamoDB", 45, "s", ["Table agent_runs with a partition key on workflow and a sort key on time.", "The Activity screen reads from it.", "Writes never slow down an agent."], "What are your access patterns, and does the key design serve them?", "Runs survive a Redis restart."),
+        S("10.2", "SNS email alerts", 30, "o", ["HIGH risk and approved reports publish to a topic.", "An email subscription receives them.", "No medical details beyond the medicine name."], "What should never go into a notification?", "You receive one real email."),
+        S("10.3", "Expiry Watcher on a schedule", 45, "s", ["EventBridge Scheduler triggers it once a day.", "It publishes expiry-alert for items expiring within 30 days.", "Running it twice sends no duplicates."], "Where does 'run once a day' live, and what if it runs twice?", "A one-minute test schedule fires and alerts once."),
+        S("10.4", "Textract in parallel with vision", 60, "a", ["Both read the same photo at the same time.", "If the names disagree, confidence drops and Gate A asks the person.", "A Textract failure falls back to vision alone."], "Two readers disagree. Who wins, and who decides?", "A deliberately misread photo reaches Gate A."),
+        S("10.5", "Move the model to Bedrock", 45, "s", ["Switch Spring AI and LangChain4j to a Bedrock model by config.", "No agent code changes.", "Cost per run is logged."], "What did the config boundary buy you?", "The same upload works on the new model."),
+        S("10.6", "Secrets in Secrets Manager", 30, "s", ["Keys are read at startup from Secrets Manager.", "No key remains in application.yml or in env files in git."], "What happens when a secret rotates while the app runs?", "A search of the repo finds no keys.")
+      ] },
+    { name: "Wrap up",
+      goal: "Turn what you built into something you can explain in an interview.",
+      learn: ["Explaining a design", "Trade-off stories"],
+      trap: "Do not start a new project. Finish this one: write it up and explain it out loud.",
+      steps: [
+        S("11.1", "Write the README", 45, "s", ["Overview, architecture diagram, how to run, and the list of topics, keys and endpoints.", "A section on the failure drills and what each taught you."], "Could a stranger run this in 15 minutes?", "A friend, or a fresh clone, runs it from the README."),
+        S("11.2", "Write five interview stories", 60, "s", ["Pick five: idempotent consumer, dead letter design, parallel auditors, critic loop, human approval.", "For each: the problem, the options, your choice, the trade-off and the result."], "What would you do differently with more time?", "Each story fits in 2 minutes spoken."),
+        S("11.3", "Record a 5 minute demo", 30, "o", ["Show the Add medicine flow, one failure drill, a cabinet review and an approval.", "Say out loud why each design choice was made."], "Which 5 minutes best show your thinking?", "The recording is saved."),
+        S("11.4", "Redraw it from memory", 30, "s", ["Draw the system with no notes.", "Compare it with your diagram from step 0.2 and list what changed."], "What did you learn that your first drawing missed?", "You can explain the system in 3 minutes.")
+      ] }
+  ];
+
+  /* ---------- helpers ---------- */
+  function $(s) { return document.querySelector(s); }
+  function add(p, c) {
+    if (c == null || c === false) return;
+    if (Array.isArray(c)) { c.forEach(function (x) { add(p, x); }); return; }
+    p.appendChild(typeof c === "object" ? c : document.createTextNode(String(c)));
+  }
+  function h(tag, attrs) {
+    var e = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      var v = attrs[k];
+      if (v == null || v === false) return;
+      if (k === "class") e.className = v;
+      else if (k === "text") e.textContent = v;
+      else if (k.slice(0, 2) === "on") e.addEventListener(k.slice(2), v);
+      else e.setAttribute(k, v === true ? "" : v);
+    });
+    for (var i = 2; i < arguments.length; i++) add(e, arguments[i]);
+    return e;
+  }
+  var reduce = false;
+  try { reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {}
+
+  /* ---------- state and saving ---------- */
+  var LS = "medstrip-plan-v1";
+  var state = { done: {}, notes: {}, parking: [] };
+  var mode = "local", ref = null;
+  var dirty = false, saving = false, again = false, saveTimer = null;
+
+  function normalize(d) {
+    d = d && typeof d === "object" ? d : {};
+    return {
+      done: d.done && typeof d.done === "object" && !Array.isArray(d.done) ? d.done : {},
+      notes: d.notes && typeof d.notes === "object" && !Array.isArray(d.notes) ? d.notes : {},
+      parking: Array.isArray(d.parking) ? d.parking.filter(function (x) { return x && typeof x.text === "string"; }) : []
+    };
+  }
+  function hasContent(s) { return Object.keys(s.done).length || Object.keys(s.notes).length || s.parking.length; }
+  function lsRead() { try { return normalize(JSON.parse(localStorage.getItem(LS))); } catch (e) { return normalize(null); } }
+  function lsWrite() { try { localStorage.setItem(LS, JSON.stringify(state)); } catch (e) {} }
+  function setStatus() {
+    var t;
+    if (mode === "db") t = (dirty || saving) ? "Saving..." : "Progress is saved with this page. Claude can read it to guide you.";
+    else t = "Progress is saved in this browser only.";
+    $("#status").textContent = t;
+  }
+  function queueSave() {
+    lsWrite();
+    dirty = true;
+    setStatus();
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(flush, 500);
+  }
+  async function flush() {
+    if (mode !== "db" || !ref) { dirty = false; setStatus(); return; }
+    if (saving) { again = true; return; }
+    saving = true;
+    dirty = false;
+    try {
+      await ref.set({ done: state.done, notes: state.notes, parking: state.parking, updatedAt: new Date().toISOString() });
+    } catch (e) {
+      mode = "local";
+    }
+    saving = false;
+    if (again) { again = false; flush(); return; }
+    setStatus();
+  }
+
+  /* ---------- build the page ---------- */
+  var refs = {}, prefs = {};
+  var total = 0, minutesAll = 0;
+  PHASES.forEach(function (p, pi) {
+    p.num = pi;
+    p.steps.forEach(function (s) { s.pi = pi; total++; minutesAll += s.m; });
+  });
+
+  function buildStep(p, s) {
+    var chk = h("input", { type: "checkbox", class: "chk", id: "chk-" + s.id, "aria-label": "Mark step " + s.id + " done" });
+    var note = h("textarea", { id: "note-" + s.id, rows: "2", placeholder: "For example: why you chose this design, or what surprised you" });
+    var summary = h("summary", null,
+      h("span", { class: "sid mono", text: s.id }),
+      h("span", { class: "stitle", text: s.t }),
+      h("span", { class: "smeta" }, h("span", { class: "pill k-" + s.k, text: KIND[s.k] }), h("span", { class: "mono", text: s.m + " min" })));
+    var details = h("details", { class: "sd" }, summary,
+      h("div", { class: "sbody" },
+        h("div", { class: "think" }, h("h4", { text: "Think first" }), h("p", { text: s.q })),
+        h("div", null, h("h4", { text: "Build: functional requirements" }),
+          h("ul", { class: "fr" }, s.b.map(function (t, i) { return h("li", null, h("code", { text: "FR-" + s.id + "." + (i + 1) }), h("span", { text: t })); }))),
+        h("div", null, h("h4", { text: "Done when" }), h("p", { text: s.d })),
+        h("div", null, h("label", { class: "small", for: "note-" + s.id, text: "What I learned (one line)" }), note)));
+    var row = h("div", { class: "step", id: "s-" + s.id }, chk, details);
+    chk.addEventListener("change", function () {
+      if (chk.checked) state.done[s.id] = new Date().toISOString(); else delete state.done[s.id];
+      queueSave(); sync();
+    });
+    note.addEventListener("input", function () {
+      if (note.value.trim()) state.notes[s.id] = note.value; else delete state.notes[s.id];
+      queueSave(); renderFocus(lastNext);
+    });
+    refs[s.id] = { row: row, chk: chk, note: note, details: details, summary: summary, pi: p.num, s: s };
+    return row;
+  }
+
+  function buildPhase(p) {
+    var bar = h("span"), count = h("span", { class: "pcount" });
+    var barBox = h("div", { class: "bar", "aria-hidden": "true" }, bar);
+    var details = h("details", { class: "phase", id: "phase-" + p.num },
+      h("summary", null,
+        h("div", { class: "ptitle" }, h("span", { class: "eyebrow", text: "Phase " + p.num }), h("h3", { text: p.name })),
+        h("div", { class: "pprog" }, count, barBox)),
+      h("div", { class: "pbody" },
+        h("p", { class: "goal", text: p.goal }),
+        h("div", { class: "learn", "aria-label": "You will learn" }, p.learn.map(function (l) { return h("span", { text: l }); })),
+        h("div", { class: "warnbox" }, h("b", { text: "Drift warning. " }), p.trap),
+        h("div", { class: "steps" }, p.steps.map(function (s) { return buildStep(p, s); }))));
+    prefs[p.num] = { root: details, details: details, bar: bar, count: count, p: p };
+    return details;
+  }
+
+  var lastNext = null;
+
+  function renderFocus(next) {
+    lastNext = next;
+    var box = $("#focus-dyn");
+    box.textContent = "";
+    if (!next) {
+      box.appendChild(h("div", { class: "allcomplete" }, h("span", { class: "eyebrow", text: "All steps done" }), h("h2", { id: "focus-h", text: "You finished the plan" }),
+        h("p", { text: "Redraw the system from memory and explain it out loud. Then decide what the next project teaches you." })));
+      return;
+    }
+    var s = next.s, p = next.p;
+    box.appendChild(h("div", { class: "focus-top" }, h("span", { class: "eyebrow", text: "Next step" }), h("span", { class: "mono muted", text: "Phase " + p.num + " · " + p.name })));
+    box.appendChild(h("h2", { id: "focus-h" }, h("span", { class: "mono", text: s.id }), s.t));
+    box.appendChild(h("div", { class: "meta-row" }, h("span", { class: "pill k-" + s.k, text: KIND[s.k] }), h("span", { class: "mono", text: s.m + " min" })));
+    box.appendChild(h("p", { class: "think-line" }, h("b", { text: "Think first: " }), s.q));
+    box.appendChild(h("div", { class: "trap" }, h("b", { text: "Stay on track. " }), p.trap));
+    var last = null;
+    Object.keys(state.done).forEach(function (id) { if (refs[id] && (!last || state.done[id] > state.done[last])) last = id; });
+    if (last && !(state.notes[last] || "").trim()) {
+      box.appendChild(h("div", { class: "nudge" }, h("span", { text: "You finished " + last + " (" + refs[last].s.t + "). Add one line about what you learned." }),
+        h("button", { type: "button", class: "btn sm", onclick: function () { openStep(last, true); } }, "Add a note")));
+    }
+    box.appendChild(h("div", { class: "btns" },
+      h("button", { type: "button", class: "btn primary", id: "open-next", onclick: function () { openStep(s.id, false); } }, "Open this step"),
+      h("button", { type: "button", class: "btn", onclick: function () { var t = $("#parking-section"); if (t.scrollIntoView) t.scrollIntoView({ behavior: reduce ? "auto" : "smooth" }); $("#park-in").focus({ preventScroll: true }); } }, "Park an idea instead")));
+  }
+
+  function openStep(id, focusNote) {
+    var r = refs[id];
+    if (!r) return;
+    prefs[r.pi].details.open = true;
+    r.details.open = true;
+    if (r.row.scrollIntoView) r.row.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    (focusNote ? r.note : r.summary).focus({ preventScroll: true });
+  }
+
+  function renderParking() {
+    var ul = $("#park-list");
+    ul.textContent = "";
+    if (!state.parking.length) {
+      ul.appendChild(h("li", null, h("span", { class: "muted", text: "Nothing parked. When an idea pops up, write it here and go back to your step." })));
+      return;
+    }
+    state.parking.forEach(function (it) {
+      ul.appendChild(h("li", null, h("span", { text: it.text }),
+        h("button", { type: "button", class: "btn sm", "aria-label": "Remove: " + it.text, onclick: function () {
+          state.parking = state.parking.filter(function (x) { return x.id !== it.id; });
+          queueSave(); renderParking();
+        } }, "Remove")));
+    });
+  }
+
+  function sync() {
+    var done = 0, minLeft = 0, next = null;
+    PHASES.forEach(function (p) {
+      var pd = 0;
+      p.steps.forEach(function (s) {
+        var r = refs[s.id];
+        var isDone = !!state.done[s.id];
+        r.chk.checked = isDone;
+        r.row.classList.toggle("done", isDone);
+        var nv = state.notes[s.id] || "";
+        if (r.note !== document.activeElement && r.note.value !== nv) r.note.value = nv;
+        if (isDone) { done++; pd++; } else { minLeft += s.m; if (!next) next = { p: p, s: s }; }
+      });
+      var pr = prefs[p.num];
+      pr.count.textContent = pd + " of " + p.steps.length;
+      pr.bar.style.width = Math.round(pd / p.steps.length * 100) + "%";
+      pr.root.classList.toggle("complete", pd === p.steps.length);
+    });
+    var pct = Math.round(done / total * 100);
+    $("#overall-bar").firstChild.style.width = pct + "%";
+    $("#overall-bar").setAttribute("aria-valuenow", String(pct));
+    var hrs = Math.round(minLeft / 60);
+    $("#overall-text").textContent = "";
+    $("#overall-text").appendChild(h("b", { text: done + " of " + total }));
+    $("#overall-text").appendChild(document.createTextNode(" steps done · about " + hrs + " h of work left"));
+    renderFocus(next);
+    renderParking();
+    return next;
+  }
+
+  /* ---------- init ---------- */
+  var phasesBox = $("#phases");
+  PHASES.forEach(function (p) { phasesBox.appendChild(buildPhase(p)); });
+  $("#lede").textContent = total + " small steps, one design idea each. Do them in order. Anything else goes in the parking lot.";
+
+  state = lsRead();
+  var first = sync();
+  if (first) prefs[first.p.num].details.open = true;
+  setStatus();
+
+  $("#f-all").addEventListener("click", function () { setFilter(false); });
+  $("#f-rem").addEventListener("click", function () { setFilter(true); });
+  function setFilter(rem) {
+    $("#phases").classList.toggle("only-remaining", rem);
+    $("#f-all").setAttribute("aria-pressed", String(!rem));
+    $("#f-rem").setAttribute("aria-pressed", String(rem));
+  }
+
+  $("#park-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var inp = $("#park-in");
+    var t = inp.value.trim().slice(0, 200);
+    if (!t) return;
+    state.parking = state.parking.concat([{ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), text: t, t: new Date().toISOString() }]);
+    inp.value = "";
+    queueSave(); renderParking();
+  });
+
+  (async function connect() {
+    try {
+      if (!window.claude || !window.claude.use) return;
+      var db = await window.claude.use("db");
+      if (!db) return;
+      ref = db.doc("plan/progress");
+      mode = "db";
+      setStatus();
+      ref.onSnapshot(function (snap) {
+        if (snap.exists) {
+          if (dirty || saving) return;
+          state = normalize(snap.data());
+          lsWrite();
+          sync();
+        } else {
+          if (snap.metadata && snap.metadata.fromCache) return;
+          if (hasContent(state)) queueSave();
+        }
+        setStatus();
+      }, function () { mode = "local"; setStatus(); });
+    } catch (e) { mode = "local"; setStatus(); }
+  })();
+})();
+</script>
+
+</body></html>

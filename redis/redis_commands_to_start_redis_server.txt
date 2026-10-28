@@ -1,0 +1,26 @@
+redis commands:
+docker compose up -d
+docker exec -it medstrip-redis redis-cli PING
+docker exec -it medstrip-redis redis-cli SET test hello
+docker compose restart
+docker exec -it medstrip-redis redis-cli GET test
+
+localstack: s3 configs:
+Write down the settings you’ll need later. Create a note in docs/config.md with:
+
+Endpoint: http://localhost:4566
+Region: pick one, for example ap-south-1
+Credentials: test / test
+Bucket: medstrip-photos
+
+s3 commands to check localstack photos:
+to check all photos uploaded in the s3:
+docker exec medstrip-localstack awslocal s3 ls s3://medstrip-photos --recursive
+
+to check specific user photos in a bucket:
+docker exec medstrip-localstack awslocal s3 ls s3://medstrip-photos/U1/
+
+commands:
+docker compose up -d
+docker exec medstrip-localstack awslocal s3 mb s3://medstrip-photos
+docker exec medstrip-localstack awslocal s3 ls

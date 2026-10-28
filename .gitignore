@@ -1,0 +1,19 @@
+# Java / Maven / Gradle
+target/
+build/
+*.class
+*.log
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+
+# Node
+node_modules/
+dist/
+
+# Secrets and local files
+.env
+*.pem
+application-local.yml

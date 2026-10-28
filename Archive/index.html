@@ -1,0 +1,1157 @@
+<title>MedStrip Console</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600&family=JetBrains+Mono:wght@400;500&family=Source+Sans+3:wght@400;500;600&display=swap">
+<style>
+  /* Layout: app shell with five tabs. Palette matches the MedStrip requirements page:
+     cool neutrals, one indigo accent, red/amber/green only for risk and status. */
+  :root {
+    --bg: #f2f4f9;
+    --surface: #ffffff;
+    --fg: #151a2b;
+    --muted: #566078;
+    --line: #d6dbe8;
+    --accent: #2f4bd0;
+    --on-accent: #ffffff;
+    --accent-soft: #e1e7fb;
+    --crit: #b42318;
+    --crit-soft: #fbe6e3;
+    --warn: #9a5b06;
+    --warn-soft: #fbefd9;
+    --ok: #17773a;
+    --code-bg: #e8ebf4;
+    --font-display: "Bricolage Grotesque", "Arial Narrow", system-ui, sans-serif;
+    --font-body: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1220;
+      --surface: #171b2e;
+      --fg: #e6e9f5;
+      --muted: #98a1bd;
+      --line: #2a3050;
+      --accent: #8ea2ff;
+      --on-accent: #0f1220;
+      --accent-soft: #1f2750;
+      --crit: #ff8f85;
+      --crit-soft: #3a1b19;
+      --warn: #f0b45a;
+      --warn-soft: #3a2d12;
+      --ok: #6ccf8a;
+      --code-bg: #0b0e1a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1220;
+    --surface: #171b2e;
+    --fg: #e6e9f5;
+    --muted: #98a1bd;
+    --line: #2a3050;
+    --accent: #8ea2ff;
+    --on-accent: #0f1220;
+    --accent-soft: #1f2750;
+    --crit: #ff8f85;
+    --crit-soft: #3a1b19;
+    --warn: #f0b45a;
+    --warn-soft: #3a2d12;
+    --ok: #6ccf8a;
+    --code-bg: #0b0e1a;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.5;
+    padding-block: 20px 56px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .app { max-width: 70rem; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 600; margin: 0; line-height: 1.15; text-wrap: balance; }
+  h1 { font-size: 1.6rem; }
+  h2 { font-size: 1.25rem; }
+  h3 { font-size: 1.05rem; }
+  p { margin: 0; }
+  .muted { color: var(--muted); }
+  .small { font-size: 14px; }
+  code { font-family: var(--font-mono); font-size: 13px; background: var(--code-bg); padding: 1px 5px; border-radius: 3px; overflow-wrap: anywhere; }
+  pre { font-family: var(--font-mono); font-size: 12.5px; background: var(--code-bg); padding: 10px 12px; border-radius: 6px; margin: 0; overflow-x: auto; }
+
+  .top { display: flex; flex-wrap: wrap; gap: 12px 20px; justify-content: space-between; align-items: center; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand svg { width: 34px; height: 34px; flex: none; }
+  .modebar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: 14px; }
+  .modebar label { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  .seg button { border: 0; background: var(--surface); color: var(--muted); padding: 6px 12px; font: inherit; cursor: pointer; }
+  .seg button.on { background: var(--accent); color: var(--on-accent); }
+
+  input, select, textarea { font: inherit; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 5px; padding: 6px 8px; min-width: 0; }
+  textarea { width: 100%; resize: vertical; }
+  .btn { font: inherit; border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 7px 14px; border-radius: 6px; cursor: pointer; }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  .btn.danger { color: var(--crit); border-color: var(--crit); }
+  .btn.ghost { border-style: dashed; color: var(--muted); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btns { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .banner { background: var(--accent-soft); border-radius: 6px; padding: 10px 14px; font-size: 14px; }
+  .banner.live { background: var(--warn-soft); }
+
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+  .tab { background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 14px; font: inherit; color: var(--muted); cursor: pointer; white-space: nowrap; }
+  .tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+  .view { display: flex; flex-direction: column; gap: 16px; }
+  .split { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 16px; align-items: start; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .eyebrow { font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+  .pill { display: inline-block; font-family: var(--font-mono); font-size: 11.5px; padding: 1px 8px; border-radius: 99px; border: 1px solid currentColor; white-space: nowrap; }
+  .pill.crit { color: var(--crit); }
+  .pill.warn { color: var(--warn); }
+  .pill.ok { color: var(--ok); }
+  .pill.acc { color: var(--accent); }
+  .pill.mute { color: var(--muted); }
+
+  .empty { border: 1px dashed var(--line); border-radius: 6px; padding: 24px; text-align: center; color: var(--muted); display: flex; flex-direction: column; gap: 10px; align-items: center; }
+
+  .stats { display: flex; flex-wrap: wrap; gap: 6px 20px; font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+  .stats b { color: var(--fg); font-weight: 500; }
+  .med { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .med:last-child { border-bottom: 0; }
+  .med .name { font-weight: 600; }
+  .med .side { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+  .med .why { grid-column: 1 / -1; font-size: 14px; color: var(--muted); }
+  .late { color: var(--crit); }
+
+  .drop { border: 2px dashed var(--line); border-radius: 8px; padding: 22px 14px; text-align: center; cursor: pointer; color: var(--muted); display: block; }
+  .drop.over, .drop:hover { border-color: var(--accent); color: var(--accent); }
+  .drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+  .samples { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.2rem, 1fr)); gap: 8px; }
+  .sample { display: flex; flex-direction: column; gap: 4px; text-align: left; font: inherit; font-size: 13px; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 6px; cursor: pointer; }
+  .sample:hover { border-color: var(--accent); }
+  .sample img { width: 100%; border-radius: 4px; display: block; }
+  .sample span { color: var(--muted); font-size: 12px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+
+  .jobhead { display: flex; gap: 12px; align-items: center; }
+  .jobhead img { width: 88px; border-radius: 6px; flex: none; }
+  .tl { list-style: none; margin: 0; padding: 0; }
+  .tl li { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .tl li:last-child { border-bottom: 0; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--line); margin-top: 5px; }
+  .dot.running { border-color: var(--accent); background: var(--accent-soft); }
+  .dot.done { background: var(--ok); border-color: var(--ok); }
+  .dot.warn { background: var(--warn); border-color: var(--warn); }
+  .dot.error { background: var(--crit); border-color: var(--crit); }
+  .dot.skipped { border-style: dotted; }
+  .tl .ms { font-family: var(--font-mono); font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .note { font-size: 14px; color: var(--muted); overflow-wrap: anywhere; }
+
+  .gate { border: 1px solid var(--warn); background: var(--warn-soft); border-radius: 6px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .form3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: 8px; }
+  .form3 label { display: flex; flex-direction: column; gap: 2px; font-size: 13px; color: var(--muted); }
+  .msgbox { border-radius: 6px; padding: 10px 14px; background: var(--code-bg); }
+  .msgbox.crit { background: var(--crit-soft); }
+  .msgbox.ok { background: var(--accent-soft); }
+
+  .lane { display: grid; grid-template-columns: minmax(0, 12rem) minmax(0, 1fr) 4.5rem; gap: 8px 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .lane:last-child { border-bottom: 0; }
+  .lane .sum { grid-column: 1 / -1; font-size: 14px; color: var(--muted); }
+  .bar { height: 8px; background: var(--code-bg); border-radius: 4px; overflow: hidden; }
+  .fill { height: 100%; background: var(--accent); }
+  .fill.done { background: var(--ok); }
+  .fill.error { background: var(--crit); }
+  .fill.skipped { background: transparent; }
+  .lane .ms { font-family: var(--font-mono); font-size: 12px; text-align: right; color: var(--muted); }
+  .round { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr); gap: 4px 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .round:last-child { border-bottom: 0; }
+  .round ul { margin: 0; padding-left: 1.1rem; }
+  .finding { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: 10px; padding: 6px 0; font-size: 15px; }
+  .rsec { display: flex; flex-direction: column; gap: 2px; }
+
+  .chat { display: flex; flex-direction: column; gap: 10px; min-height: 18rem; max-height: 32rem; overflow-y: auto; }
+  .bubble { max-width: min(88%, 40rem); padding: 10px 14px; border-radius: 8px; background: var(--code-bg); display: flex; flex-direction: column; gap: 6px; }
+  .bubble.me { align-self: flex-end; background: var(--accent-soft); }
+  .bubble .meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .bubble .foot { font-size: 12.5px; color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { font: inherit; font-size: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 99px; padding: 4px 12px; cursor: pointer; }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chatform { display: flex; gap: 8px; }
+  .chatform input { flex: 1; }
+
+  .subtabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .subtabs button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 14px; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  th { font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); background: var(--code-bg); white-space: nowrap; }
+  td.mono { font-family: var(--font-mono); font-size: 12.5px; white-space: nowrap; }
+  .ev { padding: 8px 0; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
+  .ev summary { cursor: pointer; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
+  .ev .t { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+
+  #toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: max(16px, env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 6px; max-width: min(92vw, 34rem); font-size: 14px; opacity: 0; pointer-events: none; z-index: 20; }
+  #toast.show { opacity: 1; }
+
+  @media (max-width: 560px) {
+    .lane { grid-template-columns: minmax(0, 1fr) 4.5rem; }
+    .lane .bar { grid-column: 1 / -1; order: 3; }
+    .finding { grid-template-columns: 1fr; gap: 2px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .dot.running { animation: pulse 1s ease-in-out infinite; }
+    .fill { transition: width 0.25s linear; }
+    #toast { transition: opacity 0.2s; }
+    @keyframes pulse { 50% { box-shadow: 0 0 0 4px var(--accent-soft); } }
+  }
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><rect x="3" y="3" width="34" height="34" rx="8" fill="var(--accent)"></rect><circle cx="14" cy="14" r="4" fill="var(--on-accent)"></circle><circle cx="26" cy="14" r="4" fill="var(--on-accent)"></circle><circle cx="14" cy="26" r="4" fill="var(--on-accent)"></circle><circle cx="26" cy="26" r="4" fill="var(--on-accent)" fill-opacity="0.45"></circle></svg>
+      <h1>MedStrip</h1><span class="muted">Console</span>
+    </div>
+    <div class="modebar">
+      <div class="seg" role="group" aria-label="Data source">
+        <button id="m-mock" type="button">Mock</button><button id="m-live" type="button">Live API</button>
+      </div>
+      <label id="base-wrap" hidden>API <input id="base" size="22" placeholder="empty = this origin"></label>
+      <label>User <input id="user" size="5" value="U1"></label>
+    </div>
+  </header>
+  <div id="banner" class="banner"></div>
+
+  <div class="tabs" role="tablist" aria-label="Screens">
+    <button class="tab" role="tab" id="tab-cabinet" type="button">Cabinet</button>
+    <button class="tab" role="tab" id="tab-add" type="button">Add medicine</button>
+    <button class="tab" role="tab" id="tab-review" type="button">Review</button>
+    <button class="tab" role="tab" id="tab-ask" type="button">Ask</button>
+    <button class="tab" role="tab" id="tab-activity" type="button">Activity</button>
+  </div>
+
+  <section class="view" id="v-cabinet">
+    <div class="card">
+      <div class="eyebrow">Redis cabinet</div>
+      <div class="stats" id="cab-stats"></div>
+      <div id="cab-list"></div>
+    </div>
+  </section>
+
+  <section class="view" id="v-add" hidden>
+    <div class="split">
+      <div class="card">
+        <div class="eyebrow">Flow A · sequential, event driven</div>
+        <label class="drop" id="drop" for="file">Drop a strip photo here or tap to choose<input type="file" id="file" accept="image/*"></label>
+        <div>
+          <p class="small muted" id="sample-hint">Or use a sample strip:</p>
+          <div class="samples" id="samples"></div>
+        </div>
+        <div class="row">
+          <label for="sim" class="small muted">Simulate</label>
+          <select id="sim">
+            <option value="normal">Normal</option>
+            <option value="blurry">Blurry photo</option>
+            <option value="unsure">Unsure read (asks you)</option>
+            <option value="badjson">Bad model output</option>
+            <option value="fdadown">openFDA down</option>
+            <option value="s3missing">S3 object missing</option>
+            <option value="crash">Worker crash and replay</option>
+          </select>
+        </div>
+        <p class="small muted" id="sim-help"></p>
+        <div id="recent" class="chips"></div>
+      </div>
+      <div class="card" id="job"></div>
+    </div>
+  </section>
+
+  <section class="view" id="v-review" hidden>
+    <div class="card">
+      <div class="eyebrow">Flow B · supervisor, parallel subagents, critic loop, human approval</div>
+      <p class="small muted">The supervisor plans, four auditors work at the same time, the writer drafts, the Safety Reviewer critiques, and you approve before anything is sent.</p>
+      <div class="row">
+        <label for="rsim" class="small muted">Simulate</label>
+        <select id="rsim">
+          <option value="normal">Normal</option>
+          <option value="mistake">Writer makes a mistake (critic loop)</option>
+          <option value="stubborn">Critic never satisfied</option>
+          <option value="lanefail">One lane times out</option>
+        </select>
+        <button class="btn primary" id="run-review" type="button">Run cabinet review</button>
+      </div>
+      <p class="small muted">Tip: add Warfarin first to get a HIGH finding in the report.</p>
+    </div>
+    <div id="r-status"></div>
+    <div class="split">
+      <div class="card" id="r-lanes-card" hidden>
+        <h2>Parallel auditors</h2>
+        <div id="r-plan" class="small muted"></div>
+        <div id="r-lanes"></div>
+        <div id="r-timing" class="small"></div>
+      </div>
+      <div class="card" id="r-loop-card" hidden>
+        <h2>Writer and critic loop</h2>
+        <div id="r-loop"></div>
+      </div>
+    </div>
+    <div id="r-gate"></div>
+    <div class="card" id="r-report-card" hidden>
+      <div class="eyebrow">Report</div>
+      <div id="r-report"></div>
+    </div>
+  </section>
+
+  <section class="view" id="v-ask" hidden>
+    <div class="card">
+      <div class="eyebrow">Flow C · routing and guardrail</div>
+      <div class="chat" id="chat-log" aria-live="polite"></div>
+      <div class="chips" id="chat-chips"></div>
+      <form class="chatform" id="chat-form">
+        <input id="chat-in" type="text" placeholder="Ask about your cabinet" aria-label="Your question" autocomplete="off">
+        <button class="btn primary" type="submit" id="chat-send">Send</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="view" id="v-activity" hidden>
+    <div class="card">
+      <div class="subtabs" role="group" aria-label="Activity">
+        <button class="btn" type="button" id="a-runs" aria-pressed="true">Agent runs</button>
+        <button class="btn" type="button" id="a-events" aria-pressed="false">Kafka events</button>
+        <button class="btn" type="button" id="a-dlt" aria-pressed="false">Dead letters</button>
+      </div>
+      <p class="small muted" id="a-help"></p>
+      <div id="a-body"></div>
+    </div>
+  </section>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+  var DAY = 86400000;
+
+  /* ---------- helpers ---------- */
+  function $(s, r) { return (r || document).querySelector(s); }
+  function add(p, c) {
+    if (c == null || c === false) return;
+    if (Array.isArray(c)) { c.forEach(function (x) { add(p, x); }); return; }
+    p.appendChild(typeof c === "object" ? c : document.createTextNode(String(c)));
+  }
+  function el(tag, attrs) {
+    var e = document.createElement(tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      var v = attrs[k];
+      if (v == null || v === false) return;
+      if (k === "class") e.className = v;
+      else if (k === "text") e.textContent = v;
+      else if (k.indexOf("on") === 0) e.addEventListener(k.slice(2), v);
+      else e.setAttribute(k, v === true ? "" : v);
+    });
+    for (var i = 2; i < arguments.length; i++) add(e, arguments[i]);
+    return e;
+  }
+  function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); }
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function monthStr(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1); }
+  function daysLeft(exp) { var p = String(exp).split("-"); return Math.ceil((new Date(+p[0], +p[1], 0, 23, 59, 59) - Date.now()) / DAY); }
+  function fmtTime(ts) { var d = new Date(ts); return pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds()); }
+  function secs(ms) { return (ms / 1000).toFixed(1) + " s"; }
+  function toast(msg) {
+    var t = $("#toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toast.t); toast.t = setTimeout(function () { t.classList.remove("show"); }, 4500);
+  }
+  function riskPill(r) {
+    var cls = { LOW: "ok", MEDIUM: "warn", HIGH: "crit", UNKNOWN: "mute" }[r] || "mute";
+    return el("span", { class: "pill " + cls, text: r });
+  }
+  function statusPill(s) {
+    var cls = "acc";
+    if (s === "DONE" || s === "SENT") cls = "ok";
+    else if (s === "NEEDS_RETAKE" || s === "NEEDS_CONFIRMATION" || s === "AWAITING_ACK" || s === "AWAITING_APPROVAL") cls = "warn";
+    else if (s === "FAILED" || s === "REJECTED" || s === "EXPIRED") cls = "crit";
+    return el("span", { class: "pill " + cls, text: s });
+  }
+  function empty(title, text, btn) {
+    return el("div", { class: "empty" }, el("b", { text: title }), el("span", { text: text }), btn);
+  }
+
+  /* ---------- settings ---------- */
+  var S = { mode: "mock", base: "", user: "U1" };
+  try {
+    var sv = JSON.parse(localStorage.getItem("medstrip-console") || "{}");
+    if (sv.mode === "live" || sv.mode === "mock") S.mode = sv.mode;
+    if (typeof sv.base === "string") S.base = sv.base;
+    if (sv.user) S.user = sv.user;
+  } catch (e) {}
+  function saveS() { try { localStorage.setItem("medstrip-console", JSON.stringify(S)); } catch (e) {} }
+
+  /* ---------- sample knowledge for the mock (live mode uses openFDA) ---------- */
+  var KB = {
+    ibuprofen: { label: "Ibuprofen", strength: "400 mg", cls: "NSAID", hint: "same class as Aspirin", warnings: ["May raise the risk of heart attack or stroke", "Can cause stomach bleeding", "Avoid with other NSAIDs"], pairs: { aspirin: "MEDIUM", warfarin: "HIGH" } },
+    aspirin: { label: "Aspirin", strength: "75 mg", cls: "NSAID", hint: "expiring soon in the sample cabinet", warnings: ["Can cause stomach bleeding", "Not for children with a viral illness", "Caution with other NSAIDs and blood thinners"], pairs: { ibuprofen: "MEDIUM", warfarin: "HIGH" } },
+    warfarin: { label: "Warfarin", strength: "5 mg", cls: "Blood thinner", hint: "stops at Gate B", warnings: ["Raises the risk of bleeding", "Many drugs and foods change its effect", "Regular blood tests are needed"], pairs: { aspirin: "HIGH", ibuprofen: "HIGH", paracetamol: "MEDIUM" } },
+    paracetamol: { label: "Paracetamol", strength: "500 mg", cls: "Pain reliever", hint: "not cached yet", warnings: ["Too much can damage the liver", "Check other products for the same ingredient"], pairs: { warfarin: "MEDIUM" } },
+    cetirizine: { label: "Cetirizine", strength: "10 mg", cls: "Antihistamine", hint: "already cached", warnings: ["May cause drowsiness", "Alcohol can increase drowsiness"], pairs: {} }
+  };
+  var RANK = { LOW: 0, MEDIUM: 1, HIGH: 2 };
+  function kbKey(name) { var n = String(name || "").toLowerCase(); return KB[n] ? n : null; }
+  function pairRisk(a, b) {
+    var ka = kbKey(a), kb = kbKey(b);
+    if (!ka || !kb || ka === kb) return null;
+    var r = KB[ka].pairs[kb] || KB[kb].pairs[ka];
+    if (!r) return null;
+    return { risk: r, reason: "Label for " + KB[ka].label + (r === "HIGH" ? " warns against combining with " : " advises caution with ") + KB[kb].label };
+  }
+  function riskAgainst(name, source, cabinet) {
+    if (source === "unavailable" || !kbKey(name)) return { risk: "UNKNOWN", reasons: ["No label text was available for " + name + "."], conflictsWith: [] };
+    var best = "LOW", reasons = [], conf = [];
+    cabinet.forEach(function (m) {
+      var p = pairRisk(name, m.name);
+      if (p) { reasons.push(p.reason); conf.push(m.name); if (RANK[p.risk] > RANK[best]) best = p.risk; }
+    });
+    if (!reasons.length) reasons.push("No interaction with your cabinet found in the label text. This is not a guarantee.");
+    return { risk: best, reasons: reasons, conflictsWith: conf };
+  }
+  function pharmacistLine(risk) {
+    return risk === "HIGH" ? "Ask a pharmacist before taking both." : risk === "UNKNOWN" ? "Could not check. Ask a pharmacist." : risk === "MEDIUM" ? "Check with a pharmacist." : null;
+  }
+
+  /* ---------- sample strip images ---------- */
+  function stripThumb(key) {
+    var kb = KB[key], cells = "";
+    for (var r = 0; r < 2; r++) for (var c = 0; c < 5; c++)
+      cells += '<circle cx="' + (34 + c * 42) + '" cy="' + (32 + r * 34) + '" r="13" fill="#f4f6fa" stroke="#aab2c5" stroke-width="2"/>';
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 124"><rect width="240" height="124" rx="10" fill="#cfd5e3"/>' + cells +
+      '<text x="14" y="106" font-family="monospace" font-size="13" fill="#2a3150">' + kb.label.toUpperCase() + " " + kb.strength + "</text></svg>";
+    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  }
+
+  /* ---------- mock server ---------- */
+  var M = { seq: 1000, cabinet: [], jobs: {}, jobHash: {}, gates: {}, reviews: {}, rgates: {}, runs: [], events: [], dlt: [], hashes: {}, cache: {}, uploads: [], chat: { last: null, n: 0 } };
+  var STEPS = [["upload", "medstrip-api"], ["vision", "Vision Reader"], ["facts", "Drug Facts"], ["check", "Interaction Checker"], ["safety", "Safety Reviewer"], ["cabinet", "Cabinet Writer"]];
+  function expiryIn(days) { return monthStr(new Date(Date.now() + days * DAY)); }
+  function seedMock() {
+    var low = "No interaction with your cabinet found in the label text. This is not a guarantee.";
+    M.cabinet = [
+      { id: "M-1", name: "Aspirin", strength: "75 mg", expiry: expiryIn(20), risk: "LOW", reasons: [low], conflictsWith: [], source: "openFDA" },
+      { id: "M-2", name: "Ibuprofen", strength: "400 mg", expiry: expiryIn(240), risk: "MEDIUM", reasons: ["Label for Ibuprofen advises caution with Aspirin", "Check with a pharmacist."], conflictsWith: ["Aspirin"], source: "openFDA" },
+      { id: "M-3", name: "Cetirizine", strength: "10 mg", expiry: expiryIn(520), risk: "LOW", reasons: [low], conflictsWith: [], source: "openFDA" }
+    ];
+    M.cache = { aspirin: true, ibuprofen: true, cetirizine: true };
+    M.seq = 1000;
+  }
+  function ev(topic, key, payload) {
+    M.events.unshift({ ts: Date.now(), topic: topic, key: key, payload: payload });
+    if (M.events.length > 150) M.events.pop();
+  }
+  function dltPut(from, reason, payload) {
+    M.dlt.unshift({ ts: Date.now(), from: from, reason: reason, payload: payload });
+    ev("medstrip.DLT", payload.userId || S.user, { from: from, reason: reason });
+  }
+  function logRun(wf, agent, ms, status, summary, ref) {
+    M.runs.unshift({ ts: Date.now(), workflow: wf, agent: agent, ms: ms, tokens: status === "error" || ms < 60 ? 0 : Math.round(ms * 0.35 + 60), status: status, summary: summary, ref: ref });
+    if (M.runs.length > 250) M.runs.pop();
+  }
+  function setStep(job, key, state, note, ms) {
+    var s = job.steps.filter(function (x) { return x.key === key; })[0];
+    if (!s) return;
+    s.state = state;
+    if (note != null) s.note = note;
+    if (ms != null) s.ms = ms;
+    if (state === "done" || state === "warn" || state === "error")
+      logRun("add-medicine", s.agent, s.ms || 0, state === "done" ? "ok" : state, s.note, job.jobId);
+  }
+  function endJob(job, status, message) {
+    job.status = status; job.gate = null; job.message = message;
+    if (status !== "DONE" && M.jobHash[job.jobId]) delete M.hashes[M.jobHash[job.jobId]];
+  }
+  function gate(id) { return new Promise(function (res) { M.gates[id] = res; }); }
+  function guessKey(name) {
+    var n = String(name || "").toLowerCase(), keys = Object.keys(KB);
+    for (var i = 0; i < keys.length; i++) if (n.indexOf(keys[i]) >= 0) return keys[i];
+    guessKey.i = ((guessKey.i || 0) + 1) % keys.length;
+    return keys[guessKey.i];
+  }
+  function hashFile(file) {
+    return file.arrayBuffer().then(function (buf) {
+      if (!(window.crypto && crypto.subtle)) return "f:" + file.name + ":" + file.size;
+      return crypto.subtle.digest("SHA-256", buf).then(function (d) {
+        return Array.prototype.map.call(new Uint8Array(d), function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
+      });
+    });
+  }
+
+  async function runJob(job, src) {
+    var id = job.jobId, u = S.user, drill = job.drill, a, d;
+    try {
+      setStep(job, "upload", "done", "Saved to s3://medstrip-photos/" + u + "/" + id + ".jpg. Returned 202.", 38);
+      ev("medicine-photo-uploaded", u, { jobId: id, userId: u, s3Key: u + "/" + id + ".jpg", sha256: (M.jobHash[id] || "").slice(0, 12) });
+      job.status = "READING"; setStep(job, "vision", "running", "Reading the photo");
+      await wait(900);
+      if (drill === "s3missing" || drill === "badjson") {
+        var why = drill === "s3missing" ? "S3 object not found" : "Model output did not parse";
+        for (a = 1; a <= 3; a++) {
+          setStep(job, "vision", "running", why + ", attempt " + a + " of 3");
+          if (a < 3) ev("medstrip.retry", u, { jobId: id, agent: "Vision Reader", attempt: a, reason: why });
+          await wait(650);
+        }
+        dltPut("medicine-photo-uploaded", why + " after 3 attempts", { jobId: id, userId: u });
+        setStep(job, "vision", "error", why + " after 3 attempts. Sent to medstrip.DLT.", 2000);
+        endJob(job, "FAILED", "Sent to medstrip.DLT: " + why.toLowerCase() + " after 3 attempts. Other jobs are not blocked.");
+        return;
+      }
+      var key = src.sample || guessKey(src.file && src.file.name), kb = KB[key];
+      var conf = drill === "blurry" ? 0.41 : drill === "unsure" ? 0.62 : 0.93;
+      var ex = { name: kb.label, strength: kb.strength, expiry: expiryIn(400), confidence: conf };
+      job.extracted = clone(ex);
+      setStep(job, "vision", conf < 0.7 ? "warn" : "done", 'Read "' + ex.name + " " + ex.strength + '", confidence ' + conf.toFixed(2), 900);
+      if (conf < 0.5) {
+        endJob(job, "NEEDS_RETAKE", "The photo is too blurry to read (confidence " + conf.toFixed(2) + "). Retake it in better light. This is a result, not an error, so nothing went to the DLT.");
+        return;
+      }
+      if (conf < 0.7) {
+        job.status = "NEEDS_CONFIRMATION"; job.gate = "CONFIRM";
+        d = await gate(id); job.gate = null;
+        if (!d.approve) { endJob(job, "REJECTED", d.timeout ? "No answer within 24 h. Job rejected, nothing saved." : "You rejected the details. Nothing was saved."); return; }
+        ex = d.values; ex.confidence = 1; job.extracted = clone(ex);
+        setStep(job, "vision", "done", 'Confirmed by you: "' + ex.name + " " + ex.strength + '"', 900);
+      }
+      ev("medicine-extracted", u, { jobId: id, userId: u, name: ex.name, strength: ex.strength, expiry: ex.expiry, confidence: ex.confidence, schemaVersion: 1 });
+
+      job.status = "LOOKING_UP"; setStep(job, "facts", "running", "Looking up label text");
+      await wait(700);
+      var nk = ex.name.toLowerCase(), source;
+      if (M.cache[nk]) { source = "cache"; setStep(job, "facts", "done", "Cache hit in Redis (fda:" + nk + ")", 14); }
+      else if (drill === "fdadown") {
+        for (a = 1; a <= 3; a++) {
+          setStep(job, "facts", "running", "openFDA timed out after 3 s, attempt " + a + " of 3");
+          if (a < 3) ev("medstrip.retry", u, { jobId: id, agent: "Drug Facts", attempt: a, reason: "openFDA timeout" });
+          await wait(650);
+        }
+        source = "unavailable";
+        setStep(job, "facts", "warn", "openFDA unavailable and nothing cached. Passing source=unavailable instead of guessing.", 9000);
+      } else { source = "openFDA"; M.cache[nk] = true; setStep(job, "facts", "done", "openFDA answered in 412 ms. Cached for 24 h.", 412); }
+      var warnings = (source === "unavailable" || !kbKey(ex.name)) ? [] : KB[kbKey(ex.name)].warnings;
+      ev("medicine-enriched", u, { jobId: id, userId: u, name: ex.name, warnings: warnings, source: source });
+
+      job.status = "CHECKING"; setStep(job, "check", "running", "Comparing with " + M.cabinet.length + " cabinet items");
+      await wait(700);
+      if (drill === "crash") {
+        setStep(job, "check", "error", "Agent process killed before it committed the offset", 700);
+        await wait(1400);
+        setStep(job, "check", "running", "Restarted. Replaying medicine-enriched from the last committed offset");
+        await wait(900);
+      }
+      var res = riskAgainst(ex.name, source, M.cabinet);
+      setStep(job, "check", "done", "Risk " + res.risk + (res.conflictsWith.length ? " with " + res.conflictsWith.join(", ") : ""), 700);
+      ev("interaction-checked", u, { jobId: id, userId: u, name: ex.name, risk: res.risk, conflictsWith: res.conflictsWith, source: source });
+
+      job.status = "REVIEWING"; setStep(job, "safety", "running", "Checking wording and warnings");
+      await wait(600);
+      var extra = pharmacistLine(res.risk);
+      if (extra) res.reasons.push(extra);
+      res.source = source; job.result = clone(res);
+      setStep(job, "safety", "done", extra ? "Added a pharmacist line. No dosage wording found." : "Wording is fine. No dosage advice found.", 600);
+      if (res.risk === "HIGH" || res.risk === "UNKNOWN") {
+        job.status = "AWAITING_ACK"; job.gate = "ACK";
+        d = await gate(id); job.gate = null;
+        if (!d.approve) { endJob(job, "REJECTED", d.timeout ? "No answer within 24 h. Job rejected, nothing saved." : "Discarded. Nothing was saved."); return; }
+      }
+      ev("medicine-approved", u, { jobId: id, userId: u, name: ex.name, risk: res.risk, acknowledged: res.risk === "HIGH" || res.risk === "UNKNOWN" });
+
+      setStep(job, "cabinet", "running", "Saving to the cabinet");
+      await wait(450);
+      var dup = M.cabinet.some(function (m) { return m.name === ex.name && m.strength === ex.strength && m.expiry === ex.expiry; });
+      if (dup) setStep(job, "cabinet", "done", "Already in the cabinet. Skipped the duplicate, so a replay is safe.", 450);
+      else {
+        M.cabinet.push({ id: "M-" + (++M.seq), name: ex.name, strength: ex.strength, expiry: ex.expiry, risk: res.risk, reasons: res.reasons, conflictsWith: res.conflictsWith, source: source });
+        setStep(job, "cabinet", "done", "Saved to cabinet:" + u, 450);
+      }
+      endJob(job, "DONE", ex.name + " " + ex.strength + " is in your cabinet.");
+    } catch (err) {
+      endJob(job, "FAILED", "Unexpected error: " + err.message);
+    }
+  }
+
+  var lanesDef = [
+    { key: "inter", agent: "Interaction Auditor", dur: 2400, needs: 2 },
+    { key: "expiry", agent: "Expiry Auditor", dur: 1200, needs: 1 },
+    { key: "dup", agent: "Duplicate Therapy Auditor", dur: 1800, needs: 2 },
+    { key: "warn", agent: "Label Warning Summarizer", dur: 2900, needs: 1 }
+  ];
+  function laneFindings(key, cab) {
+    var out = [], i, j, p;
+    if (key === "inter") {
+      for (i = 0; i < cab.length; i++) for (j = i + 1; j < cab.length; j++) {
+        p = pairRisk(cab[i].name, cab[j].name);
+        if (p) out.push({ risk: p.risk, text: cab[i].name + " + " + cab[j].name + ": " + p.reason, source: "openFDA" });
+      }
+    } else if (key === "expiry") {
+      cab.forEach(function (m) {
+        var d = daysLeft(m.expiry);
+        if (d <= 0) out.push({ risk: "HIGH", text: m.name + " has expired (" + m.expiry + "). Ask a pharmacist about safe disposal.", source: "cabinet" });
+        else if (d <= 30) out.push({ risk: "MEDIUM", text: m.name + " expires in " + d + " days (" + m.expiry + ")", source: "cabinet" });
+        else if (d <= 90) out.push({ risk: "LOW", text: m.name + " expires in " + d + " days (" + m.expiry + ")", source: "cabinet" });
+      });
+    } else if (key === "dup") {
+      var groups = {};
+      cab.forEach(function (m) { var k = kbKey(m.name); if (k) (groups[KB[k].cls] = groups[KB[k].cls] || []).push(m.name); });
+      Object.keys(groups).forEach(function (c) {
+        if (groups[c].length > 1) out.push({ risk: "MEDIUM", text: groups[c].join(" + ") + " are both in the class " + c + ". Check you are not doubling up.", source: "label text" });
+      });
+    } else {
+      cab.forEach(function (m) { var k = kbKey(m.name); if (k) out.push({ risk: "LOW", text: m.name + ": " + KB[k].warnings[0], source: "openFDA" }); });
+    }
+    return out;
+  }
+  async function runLane(r, l, cab) {
+    l.state = "running"; l.startedAt = Date.now();
+    await wait(l.dur);
+    if (r.drill === "lanefail" && l.key === "warn") {
+      l.state = "error"; l.ms = 20000; l.summary = "Timed out after 20 s (simulated). This section will show as unavailable.";
+      logRun("review", l.agent, 20000, "error", "Lane timeout", r.reviewId);
+      return;
+    }
+    l.findings = laneFindings(l.key, cab); l.ms = l.dur; l.state = "done";
+    l.summary = l.findings.length ? l.findings.length + " finding" + (l.findings.length > 1 ? "s" : "") : "Nothing to report";
+    logRun("review", l.agent, l.dur, "ok", l.summary, r.reviewId);
+  }
+  function laneOf(r, key) { return r.lanes.filter(function (l) { return l.key === key; })[0]; }
+  function buildReport(r, opts) {
+    var secs2 = [], inter = laneOf(r, "inter"), exp = laneOf(r, "expiry"), dup = laneOf(r, "dup"), warn = laneOf(r, "warn");
+    function withLine(f) { var x = pharmacistLine(f.risk); return { risk: f.risk, text: f.text + (x && f.risk !== "MEDIUM" && !/pharmacist/i.test(f.text) ? " " + x : "") }; }
+    var attention = [];
+    [inter, exp, dup].forEach(function (l) {
+      if (l.state === "done") l.findings.forEach(function (f) { if (f.risk === "HIGH" || f.risk === "MEDIUM") attention.push(withLine(f)); });
+    });
+    secs2.push({ heading: "Needs attention", items: attention.length ? attention : [{ risk: "LOW", text: "Nothing needs attention." }] });
+    function section(heading, lane) {
+      if (lane.state === "skipped") return { heading: heading, items: [{ risk: "LOW", text: "Not run: " + lane.summary.toLowerCase() }] };
+      if (lane.state === "error") return { heading: heading, items: [{ risk: "UNKNOWN", text: "Unavailable. " + lane.agent + " timed out. Ask a pharmacist." }] };
+      return { heading: heading, items: lane.findings.length ? lane.findings.map(withLine) : [{ risk: "LOW", text: "No findings." }] };
+    }
+    secs2.push(section("Expiry", exp));
+    secs2.push(section("Duplicate therapy", dup));
+    secs2.push(section("Label warnings", warn));
+    if (opts.badLine) secs2.push({ heading: "Notes", items: [{ risk: "LOW", text: "If the headache continues, take 2 tablets every 4 hours." }] });
+    if (opts.comment) secs2.push({ heading: "Your note", items: [{ risk: "LOW", text: 'Revised after your comment: "' + opts.comment + '"' }] });
+    return { title: "Cabinet review", generatedAt: Date.now(), sections: secs2 };
+  }
+  function critic(rep, n) {
+    var issues = [];
+    rep.sections.forEach(function (s) {
+      s.items.forEach(function (it) {
+        if (/(take \d|tablets?\b|every \d+ hours|twice daily)/i.test(it.text)) issues.push('Round ' + n + ' draft contains dosage advice: "' + it.text + '" Remove it.');
+        if ((it.risk === "HIGH" || it.risk === "UNKNOWN") && !/pharmacist/i.test(it.text)) issues.push('A ' + it.risk + ' item does not tell the user to ask a pharmacist: "' + it.text + '"');
+      });
+    });
+    return issues;
+  }
+  async function critLoop(r, optsFn, max) {
+    var start = r.rounds.length, n, issues;
+    for (var i = 0; i < max; i++) {
+      n = r.rounds.length + 1;
+      r.status = "DRAFTING"; await wait(i === 0 ? 900 : 700);
+      r.report = buildReport(r, optsFn(i)); logRun("review", "Report Writer", 800, "ok", "Draft for round " + n, r.reviewId);
+      r.status = "CRITIQUE"; await wait(800);
+      issues = critic(r.report, n);
+      r.rounds.push({ n: n, verdict: issues.length ? "REJECTED" : "APPROVED", notes: issues.length ? issues : ["No dosage advice found", "Every HIGH or UNKNOWN item points to a pharmacist", "Every finding names its source"] });
+      logRun("review", "Safety Reviewer", 800, issues.length ? "warn" : "ok", issues.length ? "Rejected round " + n : "Approved round " + n, r.reviewId);
+      if (!issues.length) return true;
+    }
+    return false;
+  }
+  async function runReview(r) {
+    var u = S.user, id = r.reviewId, cab = M.cabinet.slice();
+    ev("review-requested", u, { reviewId: id, userId: u });
+    await wait(600);
+    r.lanes = lanesDef.map(function (d) {
+      var skip = cab.length < d.needs;
+      return { key: d.key, agent: d.agent, dur: d.dur, state: skip ? "skipped" : "pending", ms: null, startedAt: null, findings: [], summary: skip ? "Skipped: needs at least " + d.needs + " medicines" : "" };
+    });
+    var run = r.lanes.filter(function (l) { return l.state !== "skipped"; });
+    r.plan = "Supervisor plan: run " + run.length + " of 4 auditors in parallel" + (run.length < 4 ? " (skipping the ones with nothing to compare)" : "") + ".";
+    logRun("review", "Review Supervisor", 600, "ok", r.plan, id);
+    r.status = "RUNNING";
+    await Promise.all(run.map(function (l) { return runLane(r, l, cab); }));
+    r.parallelMs = Math.max.apply(null, run.map(function (l) { return l.ms; }));
+    r.sequentialMs = run.reduce(function (s, l) { return s + l.ms; }, 0);
+
+    var bad = r.drill === "mistake" || r.drill === "stubborn";
+    r.approved = await critLoop(r, function (i) { return { badLine: r.drill === "stubborn" || (r.drill === "mistake" && i === 0) }; }, 3);
+    if (!r.approved) r.message = "The Safety Reviewer did not approve after 3 rounds. This report cannot be sent. Request changes to try again.";
+    while (true) {
+      r.status = "AWAITING_APPROVAL";
+      var d = await new Promise(function (res) { M.rgates[id] = res; });
+      if (d.timeout) { r.status = "EXPIRED"; r.message = "No answer within 7 days. Nothing was sent."; return; }
+      if (d.approve && r.approved) {
+        r.s3Key = "s3://medstrip-reports/" + u + "/" + id + ".md";
+        r.status = "SENT"; r.message = "Report saved to S3 and a message was published to SNS.";
+        ev("review-completed", u, { reviewId: id, userId: u, s3Key: r.s3Key });
+        ev("sns:medstrip-alerts", u, { subject: "Cabinet review ready", reviewId: id });
+        logRun("review", "publisher", 120, "ok", "Saved report to S3, published to SNS", id);
+        return;
+      }
+      r.drill = ""; r.message = "";
+      r.approved = await critLoop(r, function () { return { comment: d.comment || "" }; }, 1);
+      if (!r.approved) r.message = "The Safety Reviewer rejected the revised draft. Read the notes and request changes again.";
+    }
+  }
+
+  function routeOf(m) {
+    if (/(how many (tablets|pills|mg)|how much|dose|dosage|how often|every \d+ hours)/.test(m)) return "guardrail";
+    if (/(together|combine|mix|interact|safe to take|can i take|take .* with)/.test(m)) return "interaction";
+    if (/(expire|expiry|expired|expiring)/.test(m)) return "expiry";
+    if (/(warning|side effect|label|what is|tell me about|about)/.test(m)) return "facts";
+    if (/(cabinet|what do i have|list|my medicines|medicine do i)/.test(m)) return "cabinet";
+    return "fallback";
+  }
+  var AGENT_OF = { interaction: "Interaction Agent", facts: "Facts Agent", expiry: "Expiry Agent", cabinet: "Cabinet lookup", guardrail: "Guardrail", fallback: "No specialist" };
+  var TOOLS_OF = { interaction: ["listCabinet", "getDrugWarnings", "getInteractionResult"], facts: ["getDrugWarnings"], expiry: ["listCabinet"], cabinet: ["listCabinet"], guardrail: [], fallback: [] };
+  function mockChat(msg) {
+    return wait(650).then(function () {
+      var m = msg.toLowerCase(), route = routeOf(m), found = [], text = "";
+      Object.keys(KB).forEach(function (k) { if (m.indexOf(k) >= 0) found.push(k); });
+      if (!found.length && M.chat.last && /\b(it|that|this|that one)\b/.test(m)) found.push(M.chat.last);
+      if (found.length) M.chat.last = found[found.length - 1];
+      M.chat.n += 2;
+      var cab = M.cabinet;
+      if (route === "guardrail") text = "I can't advise on doses or how often to take a medicine. Please ask a pharmacist or your doctor.";
+      else if (route === "interaction") {
+        if (found.length >= 2) {
+          var p = pairRisk(found[0], found[1]);
+          text = p ? KB[found[0]].label + " and " + KB[found[1]].label + ": " + p.risk + ". " + p.reason + ". " + (pharmacistLine(p.risk) || "")
+            : "No interaction between " + KB[found[0]].label + " and " + KB[found[1]].label + " found in the label text. This is not a guarantee.";
+        } else if (found.length === 1) {
+          var r2 = riskAgainst(KB[found[0]].label, "openFDA", cab);
+          text = KB[found[0]].label + " against your cabinet: " + r2.risk + ". " + r2.reasons.join(" ") + " " + (pharmacistLine(r2.risk) || "");
+        } else text = "Which medicine do you mean? Name it, for example Ibuprofen.";
+      } else if (route === "facts") {
+        text = found.length ? KB[found[0]].label + " label warnings: " + KB[found[0]].warnings.join("; ") + "." : "Which medicine do you want label warnings for?";
+      } else if (route === "expiry") {
+        var soon = cab.filter(function (c) { return daysLeft(c.expiry) <= 90; }).map(function (c) { return c.name + " in " + daysLeft(c.expiry) + " days (" + c.expiry + ")"; });
+        text = soon.length ? "Expiring within 90 days: " + soon.join("; ") + "." : "Nothing in your cabinet expires in the next 90 days.";
+      } else if (route === "cabinet") {
+        text = cab.length ? "You have " + cab.length + " medicines: " + cab.map(function (c) { return c.name + " " + c.strength + " (" + c.risk + ")"; }).join(", ") + "." : "Your cabinet is empty.";
+      } else text = "I can check interactions, show label warnings, list your cabinet and find items that expire soon. Try one of the suggestions.";
+      logRun("ask", "Chat Router", 120, "ok", "route: " + route, "chat");
+      if (route !== "fallback") logRun("ask", AGENT_OF[route], 480, "ok", text.slice(0, 80), "chat");
+      return { answer: text.trim(), route: route, agent: AGENT_OF[route], tools: TOOLS_OF[route], memory: Math.min(10, M.chat.n) };
+    });
+  }
+
+  var mockApi = {
+    uploadPhoto: function (src) {
+      var now = Date.now();
+      var hp = src.sample ? Promise.resolve("sample:" + src.sample + ":" + src.drill) : hashFile(src.file);
+      return hp.then(function (hash) {
+        if (M.hashes[hash]) return { jobId: M.hashes[hash], duplicate: true };
+        M.uploads = M.uploads.filter(function (t) { return now - t < 60000; });
+        if (M.uploads.length >= 5) { var e = new Error("429"); e.status = 429; throw e; }
+        M.uploads.push(now);
+        var id = "J-" + (++M.seq);
+        var job = { jobId: id, status: "UPLOADED", gate: null, message: "", extracted: null, result: null, drill: src.drill || "normal",
+          steps: STEPS.map(function (s) { return { key: s[0], agent: s[1], state: "pending", ms: null, note: "" }; }) };
+        M.jobs[id] = job; M.hashes[hash] = id; M.jobHash[id] = hash;
+        runJob(job, src);
+        return { jobId: id };
+      });
+    },
+    getJob: function (id) { return Promise.resolve(clone(M.jobs[id])); },
+    decideJob: function (id, d) { var g = M.gates[id]; if (g) { delete M.gates[id]; g(d); } return Promise.resolve({}); },
+    getCabinet: function () { return Promise.resolve(clone(M.cabinet)); },
+    deleteMedicine: function (id) { M.cabinet = M.cabinet.filter(function (m) { return m.id !== id; }); return Promise.resolve({}); },
+    startReview: function (o) {
+      if (!M.cabinet.length) return Promise.reject(new Error("Your cabinet is empty. Add a medicine first."));
+      var id = "R-" + (++M.seq);
+      var r = { reviewId: id, status: "PLANNING", plan: "", lanes: [], parallelMs: null, sequentialMs: null, rounds: [], report: null, approved: false, s3Key: null, message: "", drill: o.drill || "" };
+      M.reviews[id] = r; runReview(r);
+      return Promise.resolve({ reviewId: id });
+    },
+    getReview: function (id) { return Promise.resolve(clone(M.reviews[id])); },
+    decideReview: function (id, d) { var g = M.rgates[id]; if (g) { delete M.rgates[id]; g(d); } return Promise.resolve({}); },
+    chat: function (msg) { return mockChat(msg); },
+    runs: function () { return Promise.resolve(clone(M.runs)); },
+    events: function () { return Promise.resolve(clone(M.events)); },
+    dlt: function () { return Promise.resolve(clone(M.dlt)); }
+  };
+
+  /* ---------- live API (same shapes as the requirements page) ---------- */
+  function makeLive() {
+    function call(path, opt) {
+      opt = opt || {};
+      opt.headers = Object.assign({ "X-User-Id": S.user }, opt.headers || {});
+      return fetch((S.base || "").replace(/\/$/, "") + path, opt).then(function (r) {
+        if (!r.ok) { var e = new Error("HTTP " + r.status); e.status = r.status; throw e; }
+        return r.status === 204 ? null : r.json();
+      });
+    }
+    function post(path, body) { return call(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) }); }
+    return {
+      uploadPhoto: function (src) {
+        if (!src.file) return Promise.reject(new Error("Live mode needs a real photo. Sample strips only work in Mock mode."));
+        var fd = new FormData(); fd.append("file", src.file);
+        var h = {}; if (src.drill && src.drill !== "normal") h["X-Drill"] = src.drill;
+        return call("/photos", { method: "POST", headers: h, body: fd });
+      },
+      getJob: function (id) { return call("/jobs/" + encodeURIComponent(id)); },
+      decideJob: function (id, d) { return post("/jobs/" + encodeURIComponent(id) + "/decision", d); },
+      getCabinet: function () { return call("/cabinet"); },
+      deleteMedicine: function (id) { return call("/cabinet/" + encodeURIComponent(id), { method: "DELETE" }); },
+      startReview: function (o) { return post("/reviews", { drill: o.drill && o.drill !== "normal" ? o.drill : undefined }); },
+      getReview: function (id) { return call("/reviews/" + encodeURIComponent(id)); },
+      decideReview: function (id, d) { return post("/reviews/" + encodeURIComponent(id) + "/decision", d); },
+      chat: function (msg) { return post("/chat", { message: msg }); },
+      runs: function () { return call("/runs"); },
+      events: function () { return call("/debug/events"); },
+      dlt: function () { return call("/debug/dlt"); }
+    };
+  }
+  function A() { return S.mode === "mock" ? mockApi : makeLive(); }
+  function netError(e) {
+    if (S.mode === "live") toast("Cannot reach the API at " + (S.base || "this page's origin") + " (" + e.message + "). Live mode works when this page is served by your API.");
+    else toast("Something went wrong: " + e.message);
+  }
+
+  /* ---------- tabs ---------- */
+  var TABS = ["cabinet", "add", "review", "ask", "activity"], cur = "cabinet";
+  function show(t) {
+    cur = t;
+    TABS.forEach(function (x) {
+      $("#v-" + x).hidden = x !== t;
+      $("#tab-" + x).setAttribute("aria-selected", x === t ? "true" : "false");
+    });
+    if (t === "cabinet") renderCabinet();
+    if (t === "activity") renderActivity(true);
+    if (t === "add") renderJob(null, true);
+    if (t === "review" && curReview) pollReview();
+  }
+
+  /* ---------- Cabinet ---------- */
+  function renderCabinet() {
+    A().getCabinet().then(function (list) {
+      list = Array.isArray(list) ? list : [];
+      var soon = list.filter(function (m) { return daysLeft(m.expiry) <= 30; }).length;
+      var attn = list.filter(function (m) { return m.risk && m.risk !== "LOW"; }).length;
+      var st = $("#cab-stats"); clear(st);
+      add(st, [el("span", null, el("b", { text: list.length }), " medicines"), el("span", null, el("b", { text: soon }), " expiring within 30 days"), el("span", null, el("b", { text: attn }), " above LOW risk")]);
+      var box = $("#cab-list"); clear(box);
+      if (!list.length) { box.appendChild(empty("Your cabinet is empty", "Add a medicine from a photo to see it here.", el("button", { class: "btn primary", type: "button", onclick: function () { show("add"); }, text: "Add medicine" }))); return; }
+      list.forEach(function (m) {
+        var d = daysLeft(m.expiry);
+        box.appendChild(el("div", { class: "med" },
+          el("div", null, el("span", { class: "name", text: m.name + " " + m.strength }), " ", el("span", { class: "small " + (d <= 30 ? "late" : "muted"), text: "Expires " + m.expiry + (d > 0 ? " (" + d + " days)" : " (expired)") })),
+          el("div", { class: "side" }, riskPill(m.risk), el("button", { class: "btn", type: "button", "aria-label": "Remove " + m.name, text: "Remove", onclick: function () { A().deleteMedicine(m.id).then(renderCabinet).catch(netError); } })),
+          el("div", { class: "why", text: (m.reasons || []).join(" ") })));
+      });
+    }).catch(netError);
+  }
+
+  /* ---------- Add medicine ---------- */
+  var TERMINAL = ["DONE", "NEEDS_RETAKE", "REJECTED", "FAILED"];
+  var curJob = null, lastJob = null, lastSig = "", pollT = null, recent = [], thumbs = {};
+  var DRILL_HELP = {
+    normal: "A clear photo runs through every agent and lands in the cabinet.",
+    blurry: "Confidence 0.41. Ends as NEEDS_RETAKE. Not an error, so nothing goes to the DLT.",
+    unsure: "Confidence 0.62. Stops at Gate A and waits for you.",
+    badjson: "The model output never parses. Two retries, then medstrip.DLT and FAILED.",
+    fdadown: "openFDA times out. Use a medicine that is not cached yet (Warfarin or Paracetamol) to get UNKNOWN and Gate B.",
+    s3missing: "The image is missing in S3. Three attempts, then medstrip.DLT and FAILED.",
+    crash: "The Interaction Checker is killed mid-step and replays. The cabinet still ends with one entry."
+  };
+  function updateSimHelp() { $("#sim-help").textContent = DRILL_HELP[$("#sim").value] || ""; }
+
+  function startUpload(src) {
+    src.drill = $("#sim").value;
+    A().uploadPhoto(src).then(function (r) {
+      if (r.duplicate) toast("Duplicate photo. Showing the first job (" + r.jobId + ").");
+      trackJob(r.jobId, src);
+    }).catch(function (e) {
+      if (e.status === 429) toast("Too many uploads. The limit is 5 per minute.");
+      else netError(e);
+    });
+  }
+  function trackJob(id, src) {
+    curJob = id; lastSig = "";
+    if (!thumbs[id]) thumbs[id] = src.sample ? stripThumb(src.sample) : (src.file ? URL.createObjectURL(src.file) : "");
+    if (!recent.some(function (r) { return r.id === id; })) recent.unshift({ id: id, label: src.sample ? KB[src.sample].label : (src.file ? src.file.name : id) });
+    renderRecent(); pollJob();
+  }
+  function pollJob() {
+    clearTimeout(pollT);
+    if (!curJob) return;
+    var id = curJob;
+    A().getJob(id).then(function (job) {
+      if (id !== curJob) return;
+      renderJob(job, false);
+      if (TERMINAL.indexOf(job.status) < 0) pollT = setTimeout(pollJob, 500);
+    }).catch(netError);
+  }
+  function renderRecent() {
+    var box = $("#recent"); clear(box);
+    recent.slice(0, 6).forEach(function (r) {
+      box.appendChild(el("button", { class: "chip", type: "button", text: r.id + " · " + r.label, onclick: function () { curJob = r.id; lastSig = ""; pollJob(); } }));
+    });
+  }
+  function decide(job, d) { A().decideJob(job.jobId, d).then(function () { lastSig = ""; pollJob(); }).catch(netError); }
+  function renderJob(job, force) {
+    if (job) lastJob = job; else job = lastJob;
+    var box = $("#job");
+    if (!job) { clear(box); box.appendChild(empty("No photo yet", "Pick a sample strip or upload a photo. Each agent step will appear here.")); return; }
+    var sig = JSON.stringify([job.status, job.steps, job.gate, job.result, job.extracted, job.message]);
+    if (!force && sig === lastSig) return;
+    lastSig = sig; clear(box);
+    var ex = job.extracted;
+    box.appendChild(el("div", { class: "jobhead" },
+      thumbs[job.jobId] ? el("img", { src: thumbs[job.jobId], alt: "Uploaded strip" }) : null,
+      el("div", null, el("div", { class: "eyebrow", text: "Job " + job.jobId }), el("h2", { text: ex ? ex.name + " " + ex.strength : "Reading the photo" }), el("div", null, statusPill(job.status)))));
+    var tl = el("ul", { class: "tl" });
+    (job.steps || []).forEach(function (s) {
+      tl.appendChild(el("li", null, el("span", { class: "dot " + s.state }), el("div", null, el("b", { text: s.agent }), el("div", { class: "note", text: s.note || (s.state === "pending" ? "Waiting" : "") })), el("span", { class: "ms", text: s.ms != null ? s.ms + " ms" : "" })));
+    });
+    box.appendChild(tl);
+    if (job.gate === "CONFIRM" && ex) {
+      var nm = el("input", { id: "g-name", value: ex.name }), st = el("input", { id: "g-strength", value: ex.strength }), xp = el("input", { id: "g-exp", value: ex.expiry });
+      box.appendChild(el("div", { class: "gate" },
+        el("h3", { text: "Gate A: confirm what the photo says" }),
+        el("p", { class: "small", text: "Confidence is " + Number(ex.confidence).toFixed(2) + ". Correct anything that is wrong, then continue." }),
+        el("div", { class: "form3" }, el("label", { for: "g-name" }, "Name", nm), el("label", { for: "g-strength" }, "Strength", st), el("label", { for: "g-exp" }, "Expiry (YYYY-MM)", xp)),
+        el("div", { class: "btns" },
+          el("button", { class: "btn primary", type: "button", text: "Confirm and continue", onclick: function () {
+            if (!/^\d{4}-\d{2}$/.test(xp.value.trim())) { toast("Expiry must look like 2027-03."); return; }
+            decide(job, { approve: true, values: { name: nm.value.trim() || ex.name, strength: st.value.trim() || ex.strength, expiry: xp.value.trim() } });
+          } }),
+          el("button", { class: "btn danger", type: "button", text: "Reject", onclick: function () { decide(job, { approve: false }); } }),
+          S.mode === "mock" ? el("button", { class: "btn ghost", type: "button", text: "Simulate no answer (24 h)", onclick: function () { decide(job, { approve: false, timeout: true }); } }) : null)));
+    }
+    if (job.gate === "ACK" && job.result) {
+      box.appendChild(el("div", { class: "gate" },
+        el("h3", { text: "Gate B: acknowledge the warning" }),
+        el("div", null, riskPill(job.result.risk)),
+        el("p", { class: "small", text: (job.result.reasons || []).join(" ") }),
+        el("div", { class: "btns" },
+          el("button", { class: "btn primary", type: "button", text: "Add anyway", onclick: function () { decide(job, { approve: true }); } }),
+          el("button", { class: "btn danger", type: "button", text: "Discard", onclick: function () { decide(job, { approve: false }); } }),
+          S.mode === "mock" ? el("button", { class: "btn ghost", type: "button", text: "Simulate no answer (24 h)", onclick: function () { decide(job, { approve: false, timeout: true }); } }) : null)));
+    }
+    if (job.result && !job.gate) {
+      box.appendChild(el("div", { class: "msgbox" },
+        el("div", { class: "row" }, riskPill(job.result.risk), el("span", { class: "small muted", text: "source: " + (job.result.source || "openFDA") + (job.result.conflictsWith && job.result.conflictsWith.length ? " · conflicts with " + job.result.conflictsWith.join(", ") : "") })),
+        el("p", { class: "small", text: (job.result.reasons || []).join(" ") })));
+    }
+    if (job.message) box.appendChild(el("div", { class: "msgbox " + (job.status === "DONE" ? "ok" : "crit"), text: job.message }));
+    box.appendChild(el("p", { class: "small muted", text: "Not medical advice. Ask a pharmacist." }));
+  }
+
+  /* ---------- Review ---------- */
+  var curReview = null, rPoll = null, rSig = {};
+  function startReview() {
+    A().startReview({ drill: $("#rsim").value }).then(function (r) {
+      curReview = r.reviewId; rSig = {}; $("#r-gate").innerHTML = "";
+      pollReview();
+    }).catch(netError);
+  }
+  function pollReview() {
+    clearTimeout(rPoll);
+    if (!curReview) return;
+    var id = curReview;
+    A().getReview(id).then(function (r) {
+      if (id !== curReview) return;
+      renderReview(r);
+      if (["SENT", "EXPIRED"].indexOf(r.status) < 0) rPoll = setTimeout(pollReview, r.status === "RUNNING" ? 250 : 500);
+    }).catch(netError);
+  }
+  function laneProgress(l) {
+    if (l.state === "done" || l.state === "error") return 1;
+    if (l.state !== "running") return 0;
+    if (l.startedAt && l.dur) return Math.min(0.97, (Date.now() - l.startedAt) / l.dur);
+    return 0.5;
+  }
+  function renderIf(key, sig, fn) { if (rSig[key] === sig) return; rSig[key] = sig; fn(); }
+  function renderReview(r) {
+    renderIf("status", r.status + r.message, function () {
+      var box = $("#r-status"); clear(box);
+      box.appendChild(el("div", { class: "row" }, el("span", { class: "eyebrow", text: "Review " + r.reviewId }), statusPill(r.status), r.message ? el("span", { class: "small muted", text: r.message }) : null));
+    });
+    var lanes = r.lanes || [];
+    $("#r-lanes-card").hidden = !lanes.length;
+    renderIf("lanes", JSON.stringify(lanes.map(function (l) { return [l.state, Math.round(laneProgress(l) * 25), l.summary]; })) + (r.parallelMs || ""), function () {
+      $("#r-plan").textContent = r.plan || "";
+      var box = $("#r-lanes"); clear(box);
+      lanes.forEach(function (l) {
+        var p = laneProgress(l);
+        box.appendChild(el("div", { class: "lane" },
+          el("div", null, el("b", { text: l.agent })),
+          el("div", { class: "bar", role: "progressbar", "aria-label": l.agent, "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(Math.round(p * 100)) }, el("div", { class: "fill " + l.state, style: "width:" + Math.round(p * 100) + "%" })),
+          el("div", { class: "ms", text: l.ms != null ? secs(l.ms) : l.state }),
+          l.summary ? el("div", { class: "sum", text: l.summary }) : null));
+      });
+      var t = $("#r-timing"); clear(t);
+      if (r.parallelMs != null) t.appendChild(el("p", null, el("b", { text: "Parallel: " + secs(r.parallelMs) }), " (the slowest lane). One after another it would take ", el("b", { text: secs(r.sequentialMs) }), "."));
+    });
+    var rounds = r.rounds || [];
+    $("#r-loop-card").hidden = !rounds.length && ["DRAFTING", "CRITIQUE"].indexOf(r.status) < 0;
+    renderIf("loop", JSON.stringify(rounds) + r.status, function () {
+      var box = $("#r-loop"); clear(box);
+      rounds.forEach(function (x) {
+        box.appendChild(el("div", { class: "round" }, el("div", null, el("b", { text: "Round " + x.n })), el("div", null, el("div", null, el("span", { class: "pill " + (x.verdict === "APPROVED" ? "ok" : "crit"), text: x.verdict })), el("ul", null, (x.notes || []).map(function (n) { return el("li", { text: n }); })))));
+      });
+      if (r.status === "DRAFTING") box.appendChild(el("p", { class: "small muted", text: "Report Writer is drafting…" }));
+      if (r.status === "CRITIQUE") box.appendChild(el("p", { class: "small muted", text: "Safety Reviewer is checking the draft…" }));
+    });
+    renderIf("gate", r.status + r.approved, function () {
+      var box = $("#r-gate"); clear(box);
+      if (r.status !== "AWAITING_APPROVAL") return;
+      var ta = el("textarea", { id: "r-comment", rows: "2", placeholder: "Optional: tell the writer what to change", "aria-label": "Comment for the writer" });
+      box.appendChild(el("div", { class: "gate" },
+        el("h3", { text: "Gate C: approve the report" }),
+        el("p", { class: "small", text: r.approved ? "The Safety Reviewer approved this draft. Nothing is sent until you approve." : "The Safety Reviewer did not approve this draft, so it cannot be sent. Request changes to try again." }),
+        ta,
+        el("div", { class: "btns" },
+          el("button", { class: "btn primary", type: "button", text: "Approve and send", disabled: !r.approved, onclick: function () { A().decideReview(r.reviewId, { approve: true }).then(function () { rSig = {}; pollReview(); }).catch(netError); } }),
+          el("button", { class: "btn", type: "button", text: "Request changes", onclick: function () {
+            if (!ta.value.trim()) { toast("Write a short comment so the writer knows what to change."); return; }
+            A().decideReview(r.reviewId, { approve: false, comment: ta.value.trim() }).then(function () { rSig = {}; pollReview(); }).catch(netError);
+          } }),
+          S.mode === "mock" ? el("button", { class: "btn ghost", type: "button", text: "Simulate no answer (7 days)", onclick: function () { A().decideReview(r.reviewId, { approve: false, timeout: true }).then(function () { rSig = {}; pollReview(); }).catch(netError); } }) : null)));
+    });
+    $("#r-report-card").hidden = !r.report;
+    renderIf("report", JSON.stringify(r.report) + r.approved + r.s3Key, function () {
+      var box = $("#r-report"); clear(box);
+      if (!r.report) return;
+      box.appendChild(el("h2", { text: r.report.title }));
+      if (!r.approved && rounds.length) box.appendChild(el("div", { class: "msgbox crit", text: "Not approved by the Safety Reviewer. It cannot be sent." }));
+      (r.report.sections || []).forEach(function (s) {
+        var sec = el("div", { class: "rsec" }, el("h3", { text: s.heading }));
+        s.items.forEach(function (it) { sec.appendChild(el("div", { class: "finding" }, el("div", null, riskPill(it.risk)), el("div", { text: it.text }))); });
+        box.appendChild(sec);
+      });
+      if (r.s3Key) box.appendChild(el("p", { class: "small" }, "Saved to ", el("code", { text: r.s3Key })));
+      box.appendChild(el("p", { class: "small muted", text: "Not medical advice. Ask a pharmacist." }));
+    });
+  }
+
+  /* ---------- Ask ---------- */
+  var chatLog = [{ me: false, text: "Ask about your cabinet. I can check interactions, show label warnings and find items that expire soon. I do not answer dosage questions.", route: null }];
+  var CHIPS = ["Can I take ibuprofen with my cabinet?", "What expires soon?", "What are the warnings for aspirin?", "What about warfarin?", "Is it safe to take aspirin with warfarin?", "How many tablets should I take?"];
+  function renderChat() {
+    var log = $("#chat-log"); clear(log);
+    chatLog.forEach(function (m) {
+      var b = el("div", { class: "bubble" + (m.me ? " me" : "") });
+      if (!m.me && m.route) b.appendChild(el("div", { class: "meta" }, el("span", { class: "pill acc", text: "route: " + m.route }), el("span", { class: "pill mute", text: m.agent }), (m.tools || []).map(function (t) { return el("code", { text: t }); })));
+      b.appendChild(el("div", { text: m.text }));
+      if (!m.me && m.route) b.appendChild(el("div", { class: "foot", text: "Memory: " + m.memory + " of 10 messages. Not medical advice. Ask a pharmacist." }));
+      log.appendChild(b);
+    });
+    log.scrollTop = log.scrollHeight;
+  }
+  function sendChat(text) {
+    text = text.trim(); if (!text) return;
+    chatLog.push({ me: true, text: text }); renderChat();
+    $("#chat-in").value = ""; $("#chat-send").disabled = true;
+    A().chat(text).then(function (r) {
+      chatLog.push({ me: false, text: r.answer, route: r.route, agent: r.agent, tools: r.tools, memory: r.memory });
+    }).catch(function (e) { chatLog.push({ me: false, text: "I could not answer: " + e.message }); netError(e); })
+      .then(function () { $("#chat-send").disabled = false; renderChat(); $("#chat-in").focus(); });
+  }
+
+  /* ---------- Activity ---------- */
+  var actTab = "runs", actSig = "";
+  var ACT_HELP = { runs: "One row per agent execution. In the real system these are DynamoDB items in agent_runs.", events: "Messages on Kafka topics, newest first. Open a row to see the payload.", dlt: "Messages that could not be processed. Each one has a reason." };
+  function setActTab(t) { actTab = t; ["runs", "events", "dlt"].forEach(function (x) { $("#a-" + x).setAttribute("aria-pressed", x === t ? "true" : "false"); }); renderActivity(true); }
+  function renderActivity(force) {
+    var p = actTab === "runs" ? A().runs() : actTab === "events" ? A().events() : A().dlt();
+    $("#a-help").textContent = ACT_HELP[actTab];
+    p.then(function (rows) {
+      rows = Array.isArray(rows) ? rows : [];
+      var sig = actTab + rows.length + (rows[0] ? rows[0].ts : "");
+      if (!force && sig === actSig) return;
+      actSig = sig;
+      var box = $("#a-body"); clear(box);
+      if (!rows.length) { box.appendChild(empty("Nothing here yet", actTab === "dlt" ? "Try the Bad model output or S3 object missing drill." : "Add a medicine or run a review to see activity.")); return; }
+      if (actTab === "runs") {
+        var tb = el("tbody");
+        rows.slice(0, 80).forEach(function (r) {
+          tb.appendChild(el("tr", null, el("td", { class: "mono", text: fmtTime(r.ts) }), el("td", { text: r.workflow }), el("td", { text: r.agent }), el("td", { class: "mono", text: r.ms + " ms" }), el("td", { class: "mono", text: r.tokens }), el("td", null, el("span", { class: "pill " + (r.status === "ok" ? "ok" : r.status === "warn" ? "warn" : "crit"), text: r.status })), el("td", { text: r.summary }), el("td", { class: "mono", text: r.ref })));
+        });
+        box.appendChild(el("div", { class: "tablewrap" }, el("table", null, el("thead", null, el("tr", null, ["Time", "Workflow", "Agent", "Duration", "Tokens", "Status", "Summary", "Ref"].map(function (h) { return el("th", { text: h }); }))), tb)));
+      } else {
+        rows.slice(0, 80).forEach(function (r) {
+          var head = actTab === "events"
+            ? [el("span", { class: "t", text: fmtTime(r.ts) }), el("code", { text: r.topic }), el("span", { class: "small muted", text: "key " + (r.key || "") })]
+            : [el("span", { class: "t", text: fmtTime(r.ts) }), el("code", { text: "medstrip.DLT" }), el("span", { class: "small", text: r.reason }), el("span", { class: "small muted", text: "from " + r.from })];
+          box.appendChild(el("details", { class: "ev" }, el("summary", null, head), el("pre", { text: JSON.stringify(r.payload, null, 2) })));
+        });
+      }
+    }).catch(function (e) { $("#a-body").textContent = ""; $("#a-body").appendChild(empty("Not available", S.mode === "live" ? "The API did not return this data (" + e.message + "). Debug endpoints are optional." : e.message)); });
+  }
+
+  /* ---------- mode and wiring ---------- */
+  function applyMode() {
+    $("#m-mock").classList.toggle("on", S.mode === "mock");
+    $("#m-live").classList.toggle("on", S.mode === "live");
+    $("#base-wrap").hidden = S.mode !== "live";
+    $("#base").value = S.base; $("#user").value = S.user;
+    var b = $("#banner");
+    b.className = "banner" + (S.mode === "live" ? " live" : "");
+    b.textContent = S.mode === "mock"
+      ? "Mock mode. Agents, Kafka, Redis and S3 are simulated in this page so you can try every flow. Sample medicines only. Not medical advice."
+      : "Live mode. Calling " + (S.base || "this page's origin") + " with user " + S.user + ". This works when the page is served by your Spring Boot app, or when the API allows CORS.";
+    $("#samples").querySelectorAll("button").forEach(function (x) { x.disabled = S.mode === "live"; });
+    $("#sample-hint").textContent = S.mode === "live" ? "Sample strips are available in Mock mode only." : "Or use a sample strip:";
+  }
+  function resetRuntime() {
+    clearTimeout(pollT); clearTimeout(rPoll);
+    curJob = null; lastJob = null; lastSig = ""; curReview = null; rSig = {}; recent = [];
+    renderRecent(); renderJob(null, true);
+    $("#r-status").innerHTML = ""; $("#r-gate").innerHTML = ""; $("#r-lanes-card").hidden = true; $("#r-loop-card").hidden = true; $("#r-report-card").hidden = true;
+  }
+  function init() {
+    seedMock();
+    $("#tab-cabinet").addEventListener("click", function () { show("cabinet"); });
+    $("#tab-add").addEventListener("click", function () { show("add"); });
+    $("#tab-review").addEventListener("click", function () { show("review"); });
+    $("#tab-ask").addEventListener("click", function () { show("ask"); });
+    $("#tab-activity").addEventListener("click", function () { show("activity"); });
+    $("#m-mock").addEventListener("click", function () { S.mode = "mock"; saveS(); applyMode(); resetRuntime(); show(cur); });
+    $("#m-live").addEventListener("click", function () { S.mode = "live"; saveS(); applyMode(); resetRuntime(); show(cur); });
+    $("#base").addEventListener("change", function (e) { S.base = e.target.value.trim(); saveS(); applyMode(); });
+    $("#user").addEventListener("change", function (e) { S.user = e.target.value.trim() || "U1"; saveS(); applyMode(); });
+    var samples = $("#samples");
+    ["ibuprofen", "warfarin", "paracetamol", "cetirizine", "aspirin"].forEach(function (k) {
+      samples.appendChild(el("button", { class: "sample", type: "button", "aria-label": "Use sample strip " + KB[k].label, onclick: function () { startUpload({ sample: k }); } },
+        el("img", { src: stripThumb(k), alt: "" }), el("b", { text: KB[k].label }), el("span", { text: KB[k].hint })));
+    });
+    var drop = $("#drop");
+    $("#file").addEventListener("change", function (e) { if (e.target.files[0]) startUpload({ file: e.target.files[0] }); e.target.value = ""; });
+    drop.addEventListener("dragover", function (e) { e.preventDefault(); drop.classList.add("over"); });
+    drop.addEventListener("dragleave", function () { drop.classList.remove("over"); });
+    drop.addEventListener("drop", function (e) { e.preventDefault(); drop.classList.remove("over"); if (e.dataTransfer.files[0]) startUpload({ file: e.dataTransfer.files[0] }); });
+    $("#sim").addEventListener("change", updateSimHelp); updateSimHelp();
+    $("#run-review").addEventListener("click", startReview);
+    var chips = $("#chat-chips");
+    CHIPS.forEach(function (c) { chips.appendChild(el("button", { class: "chip", type: "button", text: c, onclick: function () { sendChat(c); } })); });
+    $("#chat-form").addEventListener("submit", function (e) { e.preventDefault(); sendChat($("#chat-in").value); });
+    $("#a-runs").addEventListener("click", function () { setActTab("runs"); });
+    $("#a-events").addEventListener("click", function () { setActTab("events"); });
+    $("#a-dlt").addEventListener("click", function () { setActTab("dlt"); });
+    setInterval(function () { if (cur === "activity") renderActivity(false); }, 1500);
+    applyMode(); renderChat(); renderJob(null, true); show("cabinet");
+  }
+  init();
+})();
+</script>

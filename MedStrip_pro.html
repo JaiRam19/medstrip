@@ -1,0 +1,735 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>MedStrip</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600&family=JetBrains+Mono:wght@400;500&family=Source+Sans+3:wght@400;500;600&display=swap">
+<style>
+  /* Layout: single reading column, anchor nav, one section per design decision.
+     Palette: cool blue-grey neutrals, one indigo accent; red/amber/green only mean risk or status. */
+  :root {
+    --bg: #f2f4f9;
+    --surface: #ffffff;
+    --fg: #151a2b;
+    --muted: #566078;
+    --line: #d6dbe8;
+    --accent: #2f4bd0;
+    --accent-soft: #e1e7fb;
+    --crit: #b42318;
+    --crit-soft: #fbe6e3;
+    --warn: #9a5b06;
+    --ok: #17773a;
+    --code-bg: #e8ebf4;
+    --font-display: "Bricolage Grotesque", "Arial Narrow", system-ui, sans-serif;
+    --font-body: "Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1220;
+      --surface: #171b2e;
+      --fg: #e6e9f5;
+      --muted: #98a1bd;
+      --line: #2a3050;
+      --accent: #8ea2ff;
+      --accent-soft: #1f2750;
+      --crit: #ff8f85;
+      --crit-soft: #3a1b19;
+      --warn: #f0b45a;
+      --ok: #6ccf8a;
+      --code-bg: #0b0e1a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1220;
+    --surface: #171b2e;
+    --fg: #e6e9f5;
+    --muted: #98a1bd;
+    --line: #2a3050;
+    --accent: #8ea2ff;
+    --accent-soft: #1f2750;
+    --crit: #ff8f85;
+    --crit-soft: #3a1b19;
+    --warn: #f0b45a;
+    --ok: #6ccf8a;
+    --code-bg: #0b0e1a;
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    padding-block: 32px 64px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  .wrap { max-width: 62rem; margin: 0 auto; display: flex; flex-direction: column; gap: 40px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 600; text-wrap: balance; margin: 0; line-height: 1.15; }
+  h1 { font-size: clamp(2.2rem, 6vw, 3.4rem); letter-spacing: -0.015em; }
+  h2 { font-size: 1.6rem; }
+  h3 { font-size: 1.1rem; }
+  p { margin: 0; max-width: 65ch; }
+  a { color: var(--accent); }
+  .eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+  .lede { font-size: 1.15rem; max-width: 60ch; }
+  .muted { color: var(--muted); }
+
+  header { display: flex; flex-direction: column; gap: 14px; }
+  .facts { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 6px 0 0; padding: 0; list-style: none; font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+  .facts b { color: var(--fg); font-weight: 500; }
+
+  nav { display: flex; flex-wrap: wrap; gap: 6px 4px; border-block: 1px solid var(--line); padding-block: 10px; }
+  nav a { color: var(--muted); text-decoration: none; font-size: 14px; padding: 4px 10px; border-radius: 4px; }
+  nav a:hover { color: var(--accent); background: var(--accent-soft); }
+
+  section { display: flex; flex-direction: column; gap: 16px; scroll-margin-top: 16px; }
+  section > h2 { padding-top: 24px; border-top: 1px solid var(--line); }
+
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .panel ul { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 4px; }
+
+  code, pre { font-family: var(--font-mono); font-size: 13px; }
+  code { background: var(--code-bg); padding: 1px 5px; border-radius: 3px; overflow-wrap: anywhere; }
+  pre { background: var(--code-bg); padding: 14px 16px; border-radius: 6px; margin: 0; overflow-x: auto; line-height: 1.5; }
+  pre code { background: none; padding: 0; overflow-wrap: normal; }
+
+  .tablewrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+  table { border-collapse: collapse; width: 100%; min-width: 660px; font-size: 15px; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+  th { font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); background: var(--code-bg); white-space: nowrap; }
+  tr:last-child td { border-bottom: 0; }
+  .pill { display: inline-block; font-family: var(--font-mono); font-size: 11.5px; padding: 1px 8px; border-radius: 99px; border: 1px solid currentColor; white-space: nowrap; }
+  .pill.crit { color: var(--crit); }
+  .pill.warn { color: var(--warn); }
+  .pill.ok { color: var(--ok); }
+  .pill.acc { color: var(--accent); }
+  .pill.mute { color: var(--muted); }
+
+  .callout { background: var(--accent-soft); border-radius: 6px; padding: 14px 16px; max-width: 65ch; }
+  .callout.crit { background: var(--crit-soft); }
+
+  .lifecycle { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12.5px; }
+  .lifecycle .st { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 4px 10px; }
+  .lifecycle .st.wait { border-color: var(--warn); color: var(--warn); }
+  .lifecycle .st.end { border-color: var(--ok); color: var(--ok); }
+  .lifecycle .st.bad { border-color: var(--crit); color: var(--crit); }
+  .lifecycle .arrow { color: var(--muted); }
+
+  ol.steps { margin: 0; padding: 0; list-style: none; counter-reset: s; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+  ol.steps li { counter-increment: s; display: grid; grid-template-columns: 2.2rem 1fr; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); min-width: 0; }
+  ol.steps li:last-child { border-bottom: 0; }
+  ol.steps li::before { content: counter(s); font-family: var(--font-mono); color: var(--accent); font-weight: 500; }
+  ol.steps li.day { background: var(--code-bg); font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); display: block; counter-increment: none; padding-block: 8px; }
+  ol.steps li.day::before { content: none; }
+
+  .checks { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+  .checks li { border-bottom: 1px solid var(--line); }
+  .checks li:last-child { border-bottom: 0; }
+  .checks label { display: grid; grid-template-columns: 1.4rem 1fr; gap: 10px; padding: 12px 16px; cursor: pointer; align-items: start; }
+  .checks input { margin: 5px 0 0; width: 16px; height: 16px; accent-color: var(--accent); }
+  .progress { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+
+  pre.mermaid { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px; overflow-x: auto; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    nav a { transition: background 0.15s, color 0.15s; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Requirements · Kafka, Redis, AWS, Spring AI, LangChain4j</span>
+    <h1>MedStrip</h1>
+    <p class="lede">Photograph a medicine strip. A team of agents reads it, looks up official warnings, checks it against your cabinet, reviews the whole cabinet in parallel, and asks you before anything risky is saved or sent.</p>
+    <ul class="facts">
+      <li><b>11</b> agents</li>
+      <li><b>6</b> workflow patterns</li>
+      <li><b>3</b> human gates</li>
+      <li><b>10</b> AWS services</li>
+      <li><b>9</b> failure drills</li>
+      <li><b>3 to 4</b> days</li>
+    </ul>
+  </header>
+
+  <nav aria-label="Sections">
+    <a href="#scope">Scope</a>
+    <a href="#flow">Flows</a>
+    <a href="#patterns">Workflow patterns</a>
+    <a href="#aws">AWS</a>
+    <a href="#agents">Agents</a>
+    <a href="#review">Cabinet review</a>
+    <a href="#gates">Human gates</a>
+    <a href="#topics">Topics</a>
+    <a href="#contracts">Messages</a>
+    <a href="#storage">Storage</a>
+    <a href="#api">API</a>
+    <a href="#risk">Risk levels</a>
+    <a href="#failures">Failure drills</a>
+    <a href="#console">Console</a>
+    <a href="#build">Build order</a>
+    <a href="#done">Done when</a>
+  </nav>
+
+  <section id="scope">
+    <h2>Scope</h2>
+    <div class="grid2">
+      <div class="panel">
+        <span class="pill ok" style="align-self:flex-start">Core</span>
+        <ul>
+          <li>Upload a strip photo, get a job id at once.</li>
+          <li>Vision Reader, Drug Facts, Interaction Checker, Safety Reviewer, Cabinet Writer.</li>
+          <li>Cabinet per user in Redis. Retry, dead letter topic, retake outcome.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <span class="pill acc" style="align-self:flex-start">Agentic workflows</span>
+        <ul>
+          <li>Cabinet review with a supervisor and four parallel subagents.</li>
+          <li>Writer and critic loop with a round limit.</li>
+          <li>Chat router that picks the right specialist.</li>
+          <li>Three human gates that pause and resume a workflow.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <span class="pill mute" style="align-self:flex-start">AWS extras</span>
+        <ul>
+          <li>S3, SNS, DynamoDB on LocalStack first.</li>
+          <li>Bedrock and Textract on real AWS when you are ready.</li>
+          <li>EventBridge Scheduler, Secrets Manager, CloudWatch, Step Functions as stretch.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <span class="pill warn" style="align-self:flex-start">Console</span>
+        <ul>
+          <li>One HTML page that shows every feature.</li>
+          <li>Works with mock data on its own, or against your API.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="callout crit"><b>Safety rules.</b> This is a learning project, not medical advice. Use your own photos or sample strips, never someone else's. No agent gives dosage advice or a diagnosis. Show "Not medical advice. Ask a pharmacist." on every chat answer and on every HIGH or UNKNOWN result. Set an AWS budget alert before you turn on Bedrock or Textract.</div>
+  </section>
+
+  <section id="flow">
+    <h2>Flows</h2>
+    <h3>A. Add a medicine (sequential, event driven)</h3>
+    <pre class="mermaid">
+flowchart LR
+  U["User"] -->|"POST /photos"| API["medstrip-api"]
+  API --> S3[("S3")]
+  API -->|"medicine-photo-uploaded"| VR["Vision Reader"]
+  VR -->|"confidence 0.5 to 0.7"| GA{{"Gate A: confirm details"}}
+  GA -->|"medicine-extracted"| DF["Drug Facts"]
+  VR -->|"medicine-extracted"| DF
+  DF -->|"medicine-enriched"| IC["Interaction Checker"]
+  IC -->|"interaction-checked"| SR["Safety Reviewer"]
+  SR -->|"HIGH or UNKNOWN"| GB{{"Gate B: acknowledge warning"}}
+  GB -->|"medicine-approved"| CW["Cabinet Writer"]
+  SR -->|"LOW or MEDIUM: medicine-approved"| CW
+  CW --> RC[("Redis cabinet")]
+  VR -.->|"unreadable"| DLT["medstrip.DLT"]
+  DF -.->|"retries used up"| DLT
+    </pre>
+    <h3>B. Review the whole cabinet (parallel, loop, human approval)</h3>
+    <pre class="mermaid">
+flowchart LR
+  T["You, or EventBridge weekly"] -->|"POST /reviews"| SUP["Review Supervisor"]
+  SUP --> L1["Interaction Auditor"]
+  SUP --> L2["Expiry Auditor"]
+  SUP --> L3["Duplicate Therapy Auditor"]
+  SUP --> L4["Label Warning Summarizer"]
+  L1 --> W["Report Writer"]
+  L2 --> W
+  L3 --> W
+  L4 --> W
+  W --> C{"Safety Reviewer"}
+  C -->|"rejected, max 3 rounds"| W
+  C -->|"approved"| GC{{"Gate C: you approve"}}
+  GC -->|"request changes"| W
+  GC -->|"approve"| OUT["S3 report + SNS message"]
+    </pre>
+    <h3>C. Ask a question (routing)</h3>
+    <pre class="mermaid">
+flowchart LR
+  Q["Your question"] --> R{"Chat Router"}
+  R -->|"interaction"| A1["Interaction Agent"]
+  R -->|"facts"| A2["Facts Agent"]
+  R -->|"expiry"| A3["Expiry Agent"]
+  R -->|"cabinet"| A4["Cabinet lookup"]
+  R -->|"dosage question"| G["Guardrail refusal"]
+  A1 --> ANS["Answer + disclaimer"]
+  A2 --> ANS
+  A3 --> ANS
+  A4 --> ANS
+  G --> ANS
+    </pre>
+    <h3>Job status for flow A</h3>
+    <div class="lifecycle" aria-label="Job status lifecycle">
+      <span class="st">UPLOADED</span><span class="arrow">→</span>
+      <span class="st">READING</span><span class="arrow">→</span>
+      <span class="st wait">NEEDS_CONFIRMATION</span><span class="arrow">→</span>
+      <span class="st">LOOKING_UP</span><span class="arrow">→</span>
+      <span class="st">CHECKING</span><span class="arrow">→</span>
+      <span class="st">REVIEWING</span><span class="arrow">→</span>
+      <span class="st wait">AWAITING_ACK</span><span class="arrow">→</span>
+      <span class="st end">DONE</span>
+    </div>
+    <div class="lifecycle">
+      <span class="muted">Other endings:</span>
+      <span class="st bad">NEEDS_RETAKE</span>
+      <span class="st bad">REJECTED</span>
+      <span class="st bad">FAILED</span>
+    </div>
+  </section>
+
+  <section id="patterns">
+    <h2>Workflow patterns you will practise</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Pattern</th><th>Where it appears</th><th>What you learn</th></tr></thead>
+        <tbody>
+          <tr><td><b>Sequential</b> (chain)</td><td>Flow A. Each agent reads the previous agent's output and passes its own on through a Kafka topic.</td><td>Handoff contracts, idempotent steps, where to retry.</td></tr>
+          <tr><td><b>Parallel</b> (fan out, fan in)</td><td>Flow B. Four auditors run at once. Optional: Textract and the vision model both read the same photo.</td><td>Timeouts per lane, partial results, merging structured outputs. Parallel time is the slowest lane, not the sum.</td></tr>
+          <tr><td><b>Routing</b> (conditional)</td><td>Flow C. The router picks one specialist, or the guardrail refusal.</td><td>Classifying intent, fallback route, keeping a guardrail outside the model.</td></tr>
+          <tr><td><b>Supervisor</b> (orchestrator and workers)</td><td>Flow B start. The Review Supervisor plans which auditors are needed and hands each a slice of the cabinet. With fewer than 2 medicines it skips the interaction and duplicate auditors.</td><td>Delegation, passing context to subagents, collecting structured results.</td></tr>
+          <tr><td><b>Loop</b> (evaluator and optimizer)</td><td>Flow B. Report Writer drafts, Safety Reviewer critiques, up to 3 rounds.</td><td>Stop conditions, what to do when the loop never converges.</td></tr>
+          <tr><td><b>Human in the loop</b></td><td>Gates A, B and C.</td><td>Pausing without blocking a Kafka consumer, saving state, resuming on a decision, timeouts.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted">Both libraries cover these. See the <a href="https://docs.spring.io/spring-ai/reference/1.1/api/effective-agents.html" target="_blank" rel="noopener">Spring AI effective agents guide</a> (chain, parallelization, routing, orchestrator-workers, evaluator-optimizer) and the <a href="https://docs.langchain4j.dev/apidocs/dev/langchain4j/agentic/declarative/package-summary.html" target="_blank" rel="noopener">LangChain4j agentic module</a> (sequence, parallel, loop, conditional, supervisor). A good split: Spring AI for flow A, LangChain4j agentic for flows B and C. Check the current docs for exact class names.</p>
+    <div class="callout">Flow A is <b>choreography</b>: agents react to Kafka events and nobody is in charge. Flow B is <b>orchestration</b>: one supervisor owns the plan and the result. Building both shows you the trade-off. Flow A survives a crashed agent by replaying events. Flow B is easier to follow and test.</div>
+  </section>
+
+  <section id="aws">
+    <h2>AWS services</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Service</th><th>Use in MedStrip</th><th>Run it</th><th>When</th></tr></thead>
+        <tbody>
+          <tr><td><b>S3</b></td><td>Strip photos (<code>photos/</code>) and approved reports (<code>reports/</code>).</td><td>LocalStack</td><td><span class="pill ok">start</span></td></tr>
+          <tr><td><b>SNS</b></td><td>Topic <code>medstrip-alerts</code>. Message when a report is approved and sent, and for expiring items.</td><td>LocalStack</td><td><span class="pill ok">start</span></td></tr>
+          <tr><td><b>DynamoDB</b></td><td>Table <code>agent_runs</code>: one item per agent execution (agent, workflow, duration, tokens, status, summary). Powers the Runs screen.</td><td>LocalStack</td><td><span class="pill ok">start</span></td></tr>
+          <tr><td><b>Bedrock</b></td><td>The language and vision model for both Spring AI and LangChain4j.</td><td>Real AWS, pay per use. Use Ollama locally while building.</td><td><span class="pill acc">next</span></td></tr>
+          <tr><td><b>Textract</b></td><td>OCR of the strip text, run in parallel with the vision model. If they disagree on the name, confidence drops and Gate A asks you.</td><td>Real AWS, small cost</td><td><span class="pill acc">next</span></td></tr>
+          <tr><td><b>EventBridge Scheduler</b></td><td>Weekly trigger that calls <code>POST /reviews</code> for each user. Replaces a Spring scheduler.</td><td>Real AWS or LocalStack</td><td><span class="pill acc">next</span></td></tr>
+          <tr><td><b>Secrets Manager</b> or <b>SSM Parameter Store</b></td><td>Model keys and the optional openFDA key. No keys in <code>application.yml</code>.</td><td>LocalStack</td><td><span class="pill mute">later</span></td></tr>
+          <tr><td><b>CloudWatch</b></td><td>Logs plus a custom metric per agent: duration and failures.</td><td>Real AWS</td><td><span class="pill mute">later</span></td></tr>
+          <tr><td><b>Step Functions</b></td><td>Rebuild flow B as a state machine: a Parallel state for the auditors and a wait-for-callback task for Gate C. Compare it with the code version.</td><td>Real AWS</td><td><span class="pill mute">stretch</span></td></tr>
+          <tr><td><b>ECS Fargate</b>, <b>ElastiCache</b>, <b>MSK</b></td><td>Deploy the two apps, and swap Redis and Kafka for the managed versions.</td><td>Real AWS</td><td><span class="pill mute">stretch</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted">Run S3, SNS, DynamoDB and Secrets Manager against LocalStack by pointing the AWS SDK at its endpoint. Bedrock and Textract need a real account.</p>
+  </section>
+
+  <section id="agents">
+    <h2>Agents</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Agent</th><th>Flow</th><th>Input → output</th><th>Edge cases</th></tr></thead>
+        <tbody>
+          <tr><td><b>Vision Reader</b></td><td>A</td><td><code>medicine-photo-uploaded</code> → <code>medicine-extracted</code>. Name, strength, expiry, confidence.</td><td>Under 0.5: <code>NEEDS_RETAKE</code>. 0.5 to 0.7: Gate A. Not an image: DLT.</td></tr>
+          <tr><td><b>Drug Facts</b></td><td>A</td><td><code>medicine-extracted</code> → <code>medicine-enriched</code>. Calls openFDA, up to 5 warning bullets, cached 24 h.</td><td>3 s timeout, backoff. Still down: <code>source: "unavailable"</code>.</td></tr>
+          <tr><td><b>Interaction Checker</b></td><td>A</td><td><code>medicine-enriched</code> + cabinet → <code>interaction-checked</code> with risk and reasons.</td><td>No label text means <code>UNKNOWN</code>, never <code>LOW</code>.</td></tr>
+          <tr><td><b>Safety Reviewer</b></td><td>A, B</td><td>In flow A: <code>interaction-checked</code> → <code>medicine-approved</code>. In flow B: critic of the report draft.</td><td>Removes dosage or diagnosis wording. Adds "ask a pharmacist" on HIGH and UNKNOWN. HIGH and UNKNOWN stop at Gate B.</td></tr>
+          <tr><td><b>Review Supervisor</b></td><td>B</td><td>Review request → plan, then starts the auditors.</td><td>Skips auditors that have nothing to check. Keeps going when one lane fails.</td></tr>
+          <tr><td><b>Interaction Auditor</b></td><td>B</td><td>Checks every pair in the cabinet → findings with risk.</td><td>20 s lane timeout.</td></tr>
+          <tr><td><b>Expiry Auditor</b></td><td>B</td><td>Items expiring within 30 days (MEDIUM) and 90 days (LOW).</td><td>20 s lane timeout.</td></tr>
+          <tr><td><b>Duplicate Therapy Auditor</b></td><td>B</td><td>Two items in the same class, such as two NSAIDs.</td><td>20 s lane timeout.</td></tr>
+          <tr><td><b>Label Warning Summarizer</b></td><td>B</td><td>Top warning per medicine from cached label text.</td><td>20 s lane timeout. Slowest lane.</td></tr>
+          <tr><td><b>Report Writer</b></td><td>B</td><td>Merges auditor findings into the draft report. Revises on critic notes or your comment.</td><td>Max 3 critic rounds.</td></tr>
+          <tr><td><b>Chat Router</b></td><td>C</td><td>Question → route (<code>interaction</code>, <code>facts</code>, <code>expiry</code>, <code>cabinet</code>, <code>guardrail</code>) → specialist answer.</td><td>Dosage questions are refused before any model call. Follow-ups reuse the last medicine. Memory: last 10 messages.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted"><b>Cabinet Writer</b> is plain code, not an agent. It saves the medicine, skips a duplicate with the same name, strength and expiry, and sets the job to <code>DONE</code>.</p>
+  </section>
+
+  <section id="review">
+    <h2>Cabinet review workflow</h2>
+    <p>The main task. The supervisor delegates, the subagents return structured results, and the main agent writes the final report.</p>
+    <ol class="steps">
+      <li><span><b>Trigger.</b> <code>POST /reviews</code> from the console, or EventBridge Scheduler weekly. Publishes <code>review-requested</code>.</span></li>
+      <li><span><b>Plan.</b> The Review Supervisor reads the cabinet and decides which auditors to run. Fewer than 2 medicines: expiry and label warnings only.</span></li>
+      <li><span><b>Fan out.</b> Start the chosen auditors at the same time. Each has a 20 second timeout and returns <code>{agent, findings[], ms}</code>.</span></li>
+      <li><span><b>Fan in.</b> Wait for all lanes. A lane that fails or times out is marked unavailable and the review continues with partial results.</span></li>
+      <li><span><b>Draft.</b> Report Writer merges findings into sections: Needs attention, Expiry, Duplicate therapy, Label warnings.</span></li>
+      <li><span><b>Critic loop.</b> Safety Reviewer checks the draft: no dosage advice, every HIGH or UNKNOWN item says to ask a pharmacist, every finding names its source. Rejected drafts go back to the writer. After 3 rejected rounds the report is flagged "not approved" and cannot be sent.</span></li>
+      <li><span><b>Gate C.</b> Status <code>AWAITING_APPROVAL</code>. You approve, or request changes with a comment, which sends the draft back to the writer for another round.</span></li>
+      <li><span><b>Publish.</b> Save the report to <code>s3://medstrip-reports/{userId}/{reviewId}.md</code>, publish to SNS, publish <code>review-completed</code>.</span></li>
+      <li><span><b>Log.</b> Every agent run is written to the DynamoDB <code>agent_runs</code> table, with the review id as the reference.</span></li>
+    </ol>
+  </section>
+
+  <section id="gates">
+    <h2>Human gates</h2>
+    <p>A gate is a stop, not a wait. Never block a Kafka consumer while a person thinks. Save the context in Redis, end the step, and resume when the decision API publishes an event.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Gate</th><th>Opens when</th><th>You can</th><th>If nobody answers</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pill warn">A</span> Confirm details</td><td>Vision confidence is 0.5 to 0.7. Status <code>NEEDS_CONFIRMATION</code>.</td><td>Confirm, edit name, strength and expiry, or reject. Confirm publishes <code>medicine-extracted</code> with confidence 1.0.</td><td>After 24 h the job becomes <code>REJECTED</code>. Nothing is saved.</td></tr>
+          <tr><td><span class="pill warn">B</span> Acknowledge warning</td><td>Risk is HIGH or UNKNOWN. Status <code>AWAITING_ACK</code>.</td><td>Add anyway, or discard. Adding publishes <code>medicine-approved</code>.</td><td>After 24 h the job becomes <code>REJECTED</code>. Nothing is saved.</td></tr>
+          <tr><td><span class="pill warn">C</span> Approve report</td><td>Critic approved the draft. Status <code>AWAITING_APPROVAL</code>.</td><td>Approve and send, or request changes with a comment.</td><td>After 7 days the review becomes <code>EXPIRED</code>. Nothing is sent.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="topics">
+    <h2>Kafka topics</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Topic</th><th>Producer</th><th>Consumer</th><th>Key</th></tr></thead>
+        <tbody>
+          <tr><td><code>medicine-photo-uploaded</code></td><td>medstrip-api</td><td>Vision Reader</td><td><code>userId</code></td></tr>
+          <tr><td><code>medicine-extracted</code></td><td>Vision Reader, or the Gate A decision</td><td>Drug Facts</td><td><code>userId</code></td></tr>
+          <tr><td><code>medicine-enriched</code></td><td>Drug Facts</td><td>Interaction Checker</td><td><code>userId</code></td></tr>
+          <tr><td><code>interaction-checked</code></td><td>Interaction Checker</td><td>Safety Reviewer</td><td><code>userId</code></td></tr>
+          <tr><td><code>medicine-approved</code></td><td>Safety Reviewer, or the Gate B decision</td><td>Cabinet Writer</td><td><code>userId</code></td></tr>
+          <tr><td><code>review-requested</code></td><td>medstrip-api, EventBridge</td><td>Review Supervisor</td><td><code>userId</code></td></tr>
+          <tr><td><code>review-completed</code></td><td>medstrip-agents</td><td>Log, SNS publisher</td><td><code>userId</code></td></tr>
+          <tr><td><code>medstrip.retry</code></td><td>Any agent</td><td>Same agent after a delay</td><td><code>userId</code></td></tr>
+          <tr><td><code>medstrip.DLT</code></td><td>Any agent</td><td>You, by hand</td><td>original key</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="muted">3 partitions on each main topic. The key is <code>userId</code> so one user's messages stay in order within each step.</p>
+    <div class="callout">Order is guaranteed per step, not across the whole pipeline. Two photos from one user uploaded seconds apart can race. Accept this in version 1 and use it as a stretch drill.</div>
+  </section>
+
+  <section id="contracts">
+    <h2>Message contracts</h2>
+    <p>Every message carries <code>jobId</code> (or <code>reviewId</code>), <code>userId</code> and <code>schemaVersion</code>.</p>
+    <div class="grid2">
+      <pre><code>// medicine-extracted
+{
+  "jobId": "J-1042",
+  "userId": "U1",
+  "name": "Ibuprofen",
+  "strength": "400 mg",
+  "expiry": "2027-03",
+  "confidence": 0.93,
+  "schemaVersion": 1
+}</code></pre>
+      <pre><code>// auditor result inside a review
+{
+  "reviewId": "R-77",
+  "agent": "Interaction Auditor",
+  "ms": 2400,
+  "findings": [
+    {
+      "risk": "MEDIUM",
+      "text": "Aspirin + Ibuprofen: label advises caution",
+      "source": "openFDA"
+    }
+  ]
+}</code></pre>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Message</th><th>Extra fields</th></tr></thead>
+        <tbody>
+          <tr><td><code>medicine-photo-uploaded</code></td><td><code>s3Key</code>, <code>sha256</code>, <code>uploadedAt</code>, optional <code>drill</code></td></tr>
+          <tr><td><code>medicine-enriched</code></td><td><code>warnings[]</code> (max 5), <code>interactionText</code>, <code>source</code> = <code>openFDA</code>, <code>cache</code> or <code>unavailable</code></td></tr>
+          <tr><td><code>interaction-checked</code></td><td><code>risk</code>, <code>conflictsWith[]</code>, <code>reasons[]</code>, <code>source</code></td></tr>
+          <tr><td><code>medicine-approved</code></td><td>Same as <code>interaction-checked</code> plus <code>reviewNotes</code></td></tr>
+          <tr><td>Gate decision (API body)</td><td><code>{ "approve": true, "values": {...}, "comment": "..." }</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="storage">
+    <h2>Storage</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Where</th><th>Key or table</th><th>Holds</th><th>Expires</th></tr></thead>
+        <tbody>
+          <tr><td>Redis</td><td><code>job:{jobId}</code></td><td>status, steps, extracted values, result, error reason</td><td>7 days</td></tr>
+          <tr><td>Redis</td><td><code>gate:{jobId}</code></td><td>paused context for Gate A or B</td><td>24 hours</td></tr>
+          <tr><td>Redis</td><td><code>review:{reviewId}</code></td><td>lane states, draft, critic rounds, gate C state</td><td>7 days</td></tr>
+          <tr><td>Redis</td><td><code>cabinet:{userId}</code></td><td>medicine id → JSON (name, strength, expiry, last risk, reasons)</td><td>none</td></tr>
+          <tr><td>Redis</td><td><code>fda:{normalizedName}</code></td><td>summarized label text and source</td><td>24 hours</td></tr>
+          <tr><td>Redis</td><td><code>photo:{sha256}</code></td><td>jobId of the first upload of this photo</td><td>1 hour</td></tr>
+          <tr><td>Redis</td><td><code>rate:{userId}</code></td><td>uploads this minute (limit 5)</td><td>60 seconds</td></tr>
+          <tr><td>Redis</td><td><code>chat:{userId}</code></td><td>last 10 messages and last medicine mentioned</td><td>24 hours</td></tr>
+          <tr><td>DynamoDB</td><td><code>agent_runs</code> (pk <code>userId</code>, sk <code>ts#runId</code>)</td><td>workflow, agent, ms, tokens, status, summary, reference id</td><td>TTL 30 days</td></tr>
+          <tr><td>S3</td><td><code>medstrip-photos/{userId}/{jobId}.jpg</code></td><td>uploaded photo</td><td>7 days</td></tr>
+          <tr><td>S3</td><td><code>medstrip-reports/{userId}/{reviewId}.md</code></td><td>approved report</td><td>none</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="api">
+    <h2>REST API (medstrip-api)</h2>
+    <p>No login. Send a synthetic user in <code>X-User-Id</code>. The console uses exactly these endpoints.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Endpoint</th><th>Behaviour</th></tr></thead>
+        <tbody>
+          <tr><td><code>POST /photos</code></td><td>Multipart <code>file</code>. Rate limit (<code>429</code>), duplicate hash (returns the first jobId), save to S3, publish, return <code>202 {jobId}</code>. Optional header <code>X-Drill</code>: <code>blurry</code>, <code>unsure</code>, <code>badjson</code>, <code>fdadown</code>, <code>s3missing</code>, <code>crash</code>.</td></tr>
+          <tr><td><code>GET /jobs/{jobId}</code></td><td><code>{jobId, status, steps[{agent,state,ms,note}], extracted, result, gate, message}</code></td></tr>
+          <tr><td><code>POST /jobs/{jobId}/decision</code></td><td>Gate A or B. Body <code>{approve, values?}</code>.</td></tr>
+          <tr><td><code>GET /cabinet</code></td><td>Medicines with expiry, risk, reasons, conflicts.</td></tr>
+          <tr><td><code>DELETE /cabinet/{id}</code></td><td>Remove a medicine.</td></tr>
+          <tr><td><code>POST /reviews</code></td><td>Body <code>{drill?}</code> with <code>mistake</code>, <code>stubborn</code> or <code>lanefail</code>. Returns <code>{reviewId}</code>.</td></tr>
+          <tr><td><code>GET /reviews/{reviewId}</code></td><td><code>{status, plan, lanes[{agent,state,ms,summary,findings}], parallelMs, sequentialMs, rounds[{n,verdict,notes}], report, approved, s3Key}</code></td></tr>
+          <tr><td><code>POST /reviews/{reviewId}/decision</code></td><td>Gate C. Body <code>{approve, comment?}</code>.</td></tr>
+          <tr><td><code>POST /chat</code></td><td>Body <code>{message}</code>. Returns <code>{answer, route, agent, tools[], memory}</code>.</td></tr>
+          <tr><td><code>GET /runs</code></td><td>Recent agent runs from DynamoDB.</td></tr>
+          <tr><td><code>GET /debug/events</code>, <code>GET /debug/dlt</code></td><td>Recent Kafka events and dead letters, for learning only.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="risk">
+    <h2>Risk levels</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Level</th><th>Meaning</th><th>Shown to the user as</th></tr></thead>
+        <tbody>
+          <tr><td><span class="pill ok">LOW</span></td><td>The label text mentions no interaction with anything in the cabinet.</td><td>"No interaction found in the label. This is not a guarantee."</td></tr>
+          <tr><td><span class="pill warn">MEDIUM</span></td><td>The label advises caution, or two items share a class.</td><td>The reason, plus "check with a pharmacist".</td></tr>
+          <tr><td><span class="pill crit">HIGH</span></td><td>The label warns against combining it with an item in the cabinet.</td><td>The reason, plus "ask a pharmacist before taking both". Stops at Gate B.</td></tr>
+          <tr><td><span class="pill mute">UNKNOWN</span></td><td>No label text was found, or the lookup failed.</td><td>"Could not check. Ask a pharmacist." Never shown as safe. Stops at Gate B.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="failures">
+    <h2>Failure drills</h2>
+    <p>Build the success path first. For each drill, watch it break before you add the fix.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Drill</th><th>What breaks</th><th>Required behaviour</th><th>How to trigger</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="pill warn">1</span> Blurry photo</td>
+            <td>Low confidence guess. Retrying will not help.</td>
+            <td>A result, not an error. <code>NEEDS_RETAKE</code>, nothing in the DLT.</td>
+            <td><code>X-Drill: blurry</code></td>
+          </tr>
+          <tr>
+            <td><span class="pill crit">2</span> Bad model output</td>
+            <td>Output does not parse into the record.</td>
+            <td>Retry twice, then DLT and <code>FAILED</code>. Other jobs keep flowing.</td>
+            <td><code>X-Drill: badjson</code></td>
+          </tr>
+          <tr>
+            <td><span class="pill crit">3</span> openFDA down</td>
+            <td>Calls hang and consumer lag grows.</td>
+            <td>3 s timeout, backoff, cache if present. Else <code>unavailable</code>, risk <code>UNKNOWN</code>, Gate B.</td>
+            <td><code>X-Drill: fdadown</code></td>
+          </tr>
+          <tr>
+            <td><span class="pill warn">4</span> Duplicate photo</td>
+            <td>Same photo twice, or a replayed message, makes two entries.</td>
+            <td>Hash check returns the first jobId. Cabinet write is idempotent.</td>
+            <td>Upload the same file twice</td>
+          </tr>
+          <tr>
+            <td><span class="pill crit">5</span> Worker crash</td>
+            <td>Agent dies after working but before the next step.</td>
+            <td>Commit after the next event is sent. Each step checks <code>job:{jobId}</code>, so a replay does nothing twice.</td>
+            <td><code>X-Drill: crash</code></td>
+          </tr>
+          <tr>
+            <td><span class="pill crit">6</span> S3 object missing</td>
+            <td>Event arrives but the image cannot be loaded.</td>
+            <td>Retry with backoff, then DLT with a reason and <code>FAILED</code>.</td>
+            <td><code>X-Drill: s3missing</code></td>
+          </tr>
+          <tr>
+            <td><span class="pill warn">7</span> Lane timeout</td>
+            <td>One auditor hangs and the whole review waits.</td>
+            <td>20 s lane timeout. The section shows "unavailable". The review continues with the other lanes.</td>
+            <td><code>drill: lanefail</code></td>
+          </tr>
+          <tr>
+            <td><span class="pill warn">8</span> Critic never satisfied</td>
+            <td>Writer and critic loop forever.</td>
+            <td>Stop after 3 rounds. Flag the report "not approved". It cannot be sent.</td>
+            <td><code>drill: stubborn</code></td>
+          </tr>
+          <tr>
+            <td><span class="pill warn">9</span> Human never answers</td>
+            <td>A paused job waits forever and keeps state in Redis.</td>
+            <td>Gate timeout ends the job as <code>REJECTED</code> or <code>EXPIRED</code>. Nothing is saved or sent.</td>
+            <td>Lower the gate TTL to 20 s</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="console">
+    <h2>Console (frontend)</h2>
+    <p>One file, <code>index.html</code>. It runs on its own with mock data, or against your API. Copy it to <code>medstrip-api/src/main/resources/static/index.html</code> and open <code>http://localhost:8080/</code>. Same origin means no CORS setup.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Screen</th><th>What it shows</th><th>Concepts</th></tr></thead>
+        <tbody>
+          <tr><td>Cabinet</td><td>Medicines with expiry, risk and conflicts. Remove a medicine.</td><td>Redis cabinet, risk levels</td></tr>
+          <tr><td>Add medicine</td><td>Upload or pick a sample strip, choose a drill, watch each agent step, answer Gates A and B.</td><td>Sequential flow, retries, DLT, duplicate check, rate limit, human gates</td></tr>
+          <tr><td>Review</td><td>Plan, four parallel lanes with timing, critic rounds, Gate C, final report.</td><td>Supervisor, parallel, loop, human approval, S3 and SNS</td></tr>
+          <tr><td>Ask</td><td>Chat that shows the route, specialist and tools used for each answer.</td><td>Routing, guardrail, chat memory</td></tr>
+          <tr><td>Activity</td><td>Agent runs (DynamoDB), Kafka events, dead letters.</td><td>Observability, topics, DLT</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="build">
+    <h2>Build order</h2>
+    <ol class="steps">
+      <li class="day">Day 1: pipeline</li>
+      <li><span>Docker Compose: Kafka, Kafka UI, Redis, LocalStack (S3, SNS, DynamoDB). Create topics, bucket and table.</span></li>
+      <li><span><b>medstrip-api:</b> <code>POST /photos</code>, job in Redis, event to Kafka. Drop in the console and run it in mock mode to see the target.</span></li>
+      <li><span><b>Vision Reader</b> with Spring AI structured output. <b>Drug Facts</b> with openFDA and the Redis cache.</span></li>
+      <li class="day">Day 2: gates and safety</li>
+      <li><span><b>Interaction Checker</b>, <b>Safety Reviewer</b>, <b>Cabinet Writer</b>.</span></li>
+      <li><span>Gates A and B: save state, <code>POST /jobs/{id}/decision</code>, resume with an event. Switch the console to Live.</span></li>
+      <li><span>Drills 1 to 6 with the <code>X-Drill</code> header.</span></li>
+      <li class="day">Day 3: agentic review</li>
+      <li><span><b>Review Supervisor</b> and four auditors in parallel with LangChain4j agentic. Lane timeouts.</span></li>
+      <li><span><b>Report Writer</b> and the critic loop. Gate C. Publish to S3 and SNS. Write every run to DynamoDB.</span></li>
+      <li><span>Drills 7 to 9.</span></li>
+      <li class="day">Day 4: chat and AWS extras</li>
+      <li><span><b>Chat Router</b> with specialists, guardrail and Redis memory.</span></li>
+      <li><span>Move the model to Bedrock. Add Textract in parallel with the vision model. Add the EventBridge weekly trigger.</span></li>
+    </ol>
+  </section>
+
+  <section id="done">
+    <h2>Done when</h2>
+    <p class="progress" id="progress" aria-live="polite">0 of 14 checked</p>
+    <ul class="checks" id="checks">
+      <li><label><input type="checkbox" id="c1"><span>A clear photo goes from upload to <code>DONE</code> and appears in the cabinet. Upload returns before any agent finishes.</span></label></li>
+      <li><label><input type="checkbox" id="c2"><span>A blurry photo ends as <code>NEEDS_RETAKE</code> and nothing lands in the DLT.</span></label></li>
+      <li><label><input type="checkbox" id="c3"><span>An unsure read stops at Gate A. Editing the name and confirming continues the pipeline.</span></label></li>
+      <li><label><input type="checkbox" id="c4"><span>A HIGH risk medicine stops at Gate B. Discarding saves nothing. Adding anyway saves it once.</span></label></li>
+      <li><label><input type="checkbox" id="c5"><span>With openFDA blocked, the result is <code>UNKNOWN</code>, never <code>LOW</code>.</span></label></li>
+      <li><label><input type="checkbox" id="c6"><span>The same photo twice returns the same jobId. Killing the agents app mid-job still ends in <code>DONE</code> with one entry.</span></label></li>
+      <li><label><input type="checkbox" id="c7"><span>Bad model output and a missing S3 object both reach <code>medstrip.DLT</code> with a reason, and the next job is not blocked.</span></label></li>
+      <li><label><input type="checkbox" id="c8"><span>A review runs four auditors at the same time. Total time is close to the slowest lane, and the page shows both numbers.</span></label></li>
+      <li><label><input type="checkbox" id="c9"><span>With <code>lanefail</code>, the report still arrives with that section marked unavailable.</span></label></li>
+      <li><label><input type="checkbox" id="c10"><span>With <code>mistake</code>, the critic rejects round 1 and approves round 2. With <code>stubborn</code>, it stops after round 3 and the report cannot be sent.</span></label></li>
+      <li><label><input type="checkbox" id="c11"><span>Requesting changes at Gate C sends the draft back to the writer. Approving writes the report to S3 and publishes to SNS.</span></label></li>
+      <li><label><input type="checkbox" id="c12"><span>Chat routes each question to the right specialist, remembers the last medicine, and refuses a dosage question without calling a model.</span></label></li>
+      <li><label><input type="checkbox" id="c13"><span>Every agent execution appears in the <code>agent_runs</code> table and on the Activity screen.</span></label></li>
+      <li><label><input type="checkbox" id="c14"><span>A gate left unanswered ends as <code>REJECTED</code> or <code>EXPIRED</code> and leaves nothing behind in Redis.</span></label></li>
+    </ul>
+    <p class="muted">Ticks are saved in this browser only.</p>
+  </section>
+</div>
+
+<script>
+(function () {
+  var KEY = "medstrip-checks";
+  var boxes = Array.prototype.slice.call(document.querySelectorAll("#checks input"));
+  var out = document.getElementById("progress");
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { saved = {}; }
+  function update() {
+    var n = boxes.filter(function (b) { return b.checked; }).length;
+    out.textContent = n + " of " + boxes.length + " checked";
+  }
+  boxes.forEach(function (b) {
+    if (saved[b.id]) b.checked = true;
+    b.addEventListener("change", function () {
+      saved[b.id] = b.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+      update();
+    });
+  });
+  update();
+})();
+</script>
+
+<!--claude-mermaid-runtime-begin:3477-->
+<style>.mermaid-diagram{margin-block:4px}.mermaid-diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}</style>
+<script src="/_runtime/mermaid-11.16.1.min.js"></script>
+<script>(function(){
+var CFG={"palettes":{"light":{"surface":"#f4efe4","text":"#42392e","line":"#8a7f6d","border":"#7a6c52","bg":"#fffdf8"},"dark":{"surface":"#262b34","text":"#f2f3f5","line":"#a8adb8","border":"#9aa4b8","bg":"#1f232b"}}};
+if(typeof mermaid==='undefined')return;
+var pres=Array.prototype.slice.call(document.querySelectorAll('pre.mermaid')).filter(function(p){if(p.hasAttribute('data-claude-mermaid-claimed'))return false;p.setAttribute('data-claude-mermaid-claimed','1');return true;});
+if(!pres.length)return;
+var mq=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
+var root=document.documentElement;
+var items=pres.map(function(pre){
+var mount=document.createElement('div');mount.className='mermaid-diagram';
+return {pre:pre,mount:mount,src:pre.textContent||''};
+});
+var seq=0;
+var renderGen=0;
+var lastKey='';
+function pageBg(fallback){
+var els=[document.body,document.documentElement];
+for(var i=0;i<els.length;i++){
+var c=els[i]&&getComputedStyle(els[i]).backgroundColor;
+if(c&&c!=='transparent'&&c!=='rgba(0, 0, 0, 0)')return c;
+}
+return fallback;
+}
+function render(){
+var theme=root.getAttribute('data-theme');
+var dark=theme==='dark'||(!!(mq&&mq.matches)&&theme!=='light');
+var pal=dark?CFG.palettes.dark:CFG.palettes.light;
+var bg=pageBg(pal.bg);
+var key=(dark?'d':'l')+'|'+bg;
+if(key===lastKey)return;
+lastKey=key;
+var gen=++renderGen;
+var font=getComputedStyle(document.body).fontFamily||'sans-serif';
+var nat={useMaxWidth:false};
+mermaid.initialize({
+startOnLoad:false,securityLevel:'strict',theme:'base',
+flowchart:nat,sequence:nat,er:nat,state:nat,class:nat,pie:nat,
+gantt:nat,journey:nat,timeline:nat,gitGraph:nat,mindmap:nat,xyChart:nat,
+quadrantChart:nat,sankey:nat,c4:nat,requirement:nat,block:nat,
+packet:nat,kanban:nat,architecture:nat,radar:nat,
+themeVariables:{background:bg,mainBkg:pal.surface,primaryColor:pal.surface,
+primaryTextColor:pal.text,lineColor:pal.line,primaryBorderColor:pal.border,
+nodeBorder:pal.border,clusterBorder:pal.border,edgeLabelBackground:bg,
+clusterBkg:'rgba(127,127,127,0.07)',titleColor:pal.text,
+darkMode:dark,rowOdd:bg,rowEven:'rgba(127,127,127,0.07)',
+attributeBackgroundColorOdd:bg,attributeBackgroundColorEven:'rgba(127,127,127,0.07)',
+fontSize:'16px',fontFamily:font},
+themeCSS:'.node rect, .node circle, .node polygon, .node path, .cluster rect { stroke-width: 2px; }'
+});
+items.forEach(function(it){
+var id='claude-mermaid-'+seq++;
+mermaid.render(id,it.src).then(function(r){
+if(gen!==renderGen)return;
+var prev=it.pre.previousElementSibling;
+if(prev&&prev.className==='mermaid-diagram'&&prev!==it.mount)return;
+it.mount.innerHTML=r.svg;
+if(!it.mount.parentNode)it.pre.parentNode.insertBefore(it.mount,it.pre);
+it.pre.style.display='none';
+},function(){
+var scratch=document.getElementById(id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+scratch=document.getElementById('d'+id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+if(gen!==renderGen)return;
+if(it.mount.parentNode)it.mount.parentNode.removeChild(it.mount);
+it.pre.style.display='';
+});
+});
+}
+render();
+if(mq&&mq.addEventListener)mq.addEventListener('change',render);
+if(typeof MutationObserver!=='undefined')new MutationObserver(render).observe(root,{attributes:true,attributeFilter:['data-theme']});
+})();</script>
+<!--claude-mermaid-runtime-end-->
+
+</body></html>
