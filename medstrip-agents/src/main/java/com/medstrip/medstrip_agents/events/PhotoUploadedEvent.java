@@ -1,3 +1,3 @@
-package events;
+package com.medstrip.medstrip_agents.events;
 
 public record PhotoUploadedEvent(String jobId, String userId, String s3Key, int schemaVersion) {}

@@ -1,6 +1,20 @@
 spring:
   application:
     name: medstrip-agents
+
+  ai:
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY}
+      chat:
+        options:
+          model: claude-haiku-5-5
+          max-tokens: 1500
+
+  http:
+    client:
+      connect-timeout: 5s
+      read-timeout: 20s
+
   data:
     redis:
       host: localhost
@@ -9,12 +23,32 @@ spring:
       connect-timeout: 2s
   kafka:
     bootstrap-servers: localhost:9092
+    producer:
+      acks: all
+      properties:
+        enable.idempotence: true
+        max.block.ms: 3000
+        request.timeout.ms: 3000
+        delivery.timeout.ms: 5000
     consumer:
       group-id: vision-group
       auto-offset-reset: earliest
       enable-auto-commit: false
     listener:
       ack-mode: RECORD
+
+app:
+  s3:
+    endpoint: http://localhost:4566
+    region: ap-south-1
+    bucket: medstrip-photos
+    access-key: test
+    secret-key: test
+    path-style-access: true
+
+  reading:
+    ok: 0.7
+    retake: 0.5
 
 server:
   port: 8082

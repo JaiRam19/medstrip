@@ -87,7 +87,7 @@ public class PhotoController {
             dedup.release(userId, sha);      // the upload failed, so let the retry go through
             throw e;
         }
-        
+
         return ResponseEntity.accepted().body(Map.of("jobId", jobId));
     }
 
