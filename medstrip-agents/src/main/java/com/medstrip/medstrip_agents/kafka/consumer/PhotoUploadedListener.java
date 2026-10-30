@@ -5,14 +5,19 @@ import com.medstrip.medstrip_agents.enums.Decision;
 import com.medstrip.medstrip_agents.kafka.producer.ExtractedPublisher;
 import com.medstrip.medstrip_agents.repository.JobStatusRepository;
 import com.medstrip.medstrip_agents.events.PhotoUploadedEvent;
+import com.medstrip.medstrip_agents.service.AgentRunLog;
 import com.medstrip.medstrip_agents.service.PhotoStore;
 import com.medstrip.medstrip_agents.service.ReadingDecider;
+import com.medstrip.medstrip_agents.util.AgentRun;
+import com.medstrip.medstrip_agents.util.ReadResult;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.ObjectMapper;
+
+import java.time.Instant;
 
 @Component
 public class PhotoUploadedListener {
@@ -24,19 +29,21 @@ public class PhotoUploadedListener {
     private final VisionReader reader;
     private final ReadingDecider decider;
     private final ExtractedPublisher publisher;
+    private final AgentRunLog runLog;
 
     public PhotoUploadedListener(ObjectMapper mapper,
                                  JobStatusRepository jobs,
                                  PhotoStore store,
                                  VisionReader reader,
                                  ReadingDecider decider,
-                                 ExtractedPublisher publisher) {
+                                 ExtractedPublisher publisher, AgentRunLog runLog) {
         this.mapper = mapper;
         this.jobs = jobs;
         this.store = store;
         this.reader = reader;
         this.decider = decider;
         this.publisher = publisher;
+        this.runLog = runLog;
     }
 
     @KafkaListener(topics = "medicine-photo-uploaded")
@@ -56,16 +63,36 @@ public class PhotoUploadedListener {
 
         jobs.setStatus(event.jobId(), "READING", null);
 
-        Decision decision = decider.decide(reader.readPhoto(store.load(event.s3Key())));
-        log.info("Job {} outcome {} (confidence {})", event.jobId(), decision.outcome(), decision.reading().confidence());
+        long start = System.nanoTime();
 
-        switch (decision.outcome()){
-            case OK -> {
-                publisher.publish(event, decision.reading());
-                jobs.setStatus(event.jobId(), "LOOKING_UP", null);
+        try {
+            ReadResult result = reader.readPhoto(store.load(event.s3Key()));
+            Decision decision = decider.decide(result.reading());
+            log.info("Job {} outcome {} (confidence {})", event.jobId(), decision.outcome(), decision.reading().confidence());
+
+            switch (decision.outcome()){
+                case OK -> {
+                    publisher.publish(event, decision.reading());
+                    jobs.setStatus(event.jobId(), "LOOKING_UP", null);
+                }
+                case NEEDS_CONFIRMATION -> jobs.setStatus(event.jobId(), "AWAITING_CONFIRMATION", decision.message());
+                case NEEDS_RETAKE -> jobs.setStatus(event.jobId(), "NEEDS_RETAKE", decision.message());
             }
-            case NEEDS_CONFIRMATION -> jobs.setStatus(event.jobId(), "AWAITING_CONFIRMATION", decision.message());
-            case NEEDS_RETAKE -> jobs.setStatus(event.jobId(), "NEEDS_RETAKE", decision.message());
+
+            runLog.record(new AgentRun("vision-reader", event.jobId(), Instant.now(),
+                    (System.nanoTime() - start) / 1_000_000,
+                    result.promptTokens(), result.completionTokens(),
+                    decision.outcome().name(),
+                    decision.reading().name() + " " + decision.reading().strength() + ", confidence " + decision.reading().confidence()));
+
+        } catch (RuntimeException e) {
+            runLog.record(new AgentRun("vision-reader", event.jobId(), Instant.now(),
+                    (System.nanoTime() - start) / 1_000_000, 0, 0, "ERROR",
+                    e.getClass().getSimpleName() + ": " + e.getMessage()));
+
+            throw e;
         }
     }
+
+
 }

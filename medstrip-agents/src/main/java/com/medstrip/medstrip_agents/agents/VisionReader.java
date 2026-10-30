@@ -3,10 +3,12 @@ package com.medstrip.medstrip_agents.agents;
 import com.medstrip.medstrip_agents.agent_results.MedicineReading;
 import com.medstrip.medstrip_agents.exception.PhotoTooLargeException;
 import com.medstrip.medstrip_agents.exception.ReadingException;
+import com.medstrip.medstrip_agents.util.ReadResult;
 import com.medstrip.medstrip_agents.util.StoredPhoto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.core.io.ByteArrayResource;
@@ -50,7 +52,7 @@ public class VisionReader {
         }
     }
 
-    public MedicineReading readPhoto(StoredPhoto photo) {
+    public ReadResult readPhoto(StoredPhoto photo) {
         if (photo.bytes().length > MAX_IMAGE_BYTES) {
             throw new PhotoTooLargeException(photo.bytes().length);
         }
@@ -75,7 +77,12 @@ public class VisionReader {
             if (text.isBlank()) {
                 throw new ReadingException("the model returned no answer", null);
             }
-            return converter.convert(extractJson(text));
+
+            Usage usage = response.getMetadata().getUsage();
+            int inputTokens = usage.getPromptTokens() == null ? 0 : usage.getPromptTokens();
+            int outputTokens = usage.getCompletionTokens() == null? 0 : usage.getCompletionTokens();
+            return new ReadResult(converter.convert(extractJson(text)), inputTokens, outputTokens);
+
         } catch (ReadingException e) {
             throw e;
         } catch (Exception e) {

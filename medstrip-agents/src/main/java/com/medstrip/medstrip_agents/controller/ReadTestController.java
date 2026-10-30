@@ -5,6 +5,7 @@ import com.medstrip.medstrip_agents.exception.PhotoMissingException;
 import com.medstrip.medstrip_agents.exception.PhotoTooLargeException;
 import com.medstrip.medstrip_agents.exception.ReadingException;
 import com.medstrip.medstrip_agents.service.PhotoStore;
+import com.medstrip.medstrip_agents.service.ReadingDecider;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,10 +18,12 @@ public class ReadTestController {
 
     private final VisionReader reader;
     private final PhotoStore store;
+    private final ReadingDecider decider;
 
-    public ReadTestController(VisionReader reader, PhotoStore store) {
+    public ReadTestController(VisionReader reader, PhotoStore store, ReadingDecider decider) {
         this.reader = reader;
         this.store = store;
+        this.decider = decider;
     }
 
     @GetMapping("/read-text")
@@ -35,7 +38,7 @@ public class ReadTestController {
     @GetMapping("/read-photo")
     public ResponseEntity<?> readPhoto(@RequestParam String key) {
         try {
-            return ResponseEntity.ok(reader.readPhoto(store.load(key)));
+            return ResponseEntity.ok(decider.decide(reader.readPhoto(store.load(key)).reading()));
         } catch (PhotoMissingException e) {
             return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
         } catch (PhotoTooLargeException | ReadingException e) {
